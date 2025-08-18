@@ -23,7 +23,6 @@ python app.py
 
 ## 说明
 
-- Word 模板默认使用 `templates/word/日巡检记录模版.docx`。如需自定义，请在 `config.py` 将 `WORD_TEMPLATE` 指向你的模板路径或设置环境变量 `OPS_WORD_TEMPLATE`。
 - 阈值默认为 80%，可通过环境变量调整：`OPS_CPU_THRESHOLD`/`OPS_MEM_THRESHOLD`/`OPS_DISK_THRESHOLD`。
 - 服务器密码采用 AES-GCM 加密存储，密钥从 `OPS_AES_KEY`（base64/hex）或 `OPS_AES_KEY_FILE` 读取，均未设置时使用内置开发密钥（请勿用于生产）。
 - 巡检命令基于 `paramiko` 执行：`uptime -p`、`top -bn1`/`mpstat`、`free -m`、`df -P /`。
