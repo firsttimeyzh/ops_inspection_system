@@ -18,7 +18,7 @@ pip install -r requirements.txt
 # export OPS_AES_KEY=$(python - <<'PY'\nimport os,base64;print(base64.b64encode(os.urandom(32)).decode())\nPY)
 
 python app.py
-# 浏览器打开 http://localhost:5055
+# 浏览器打开 http://localhost:1999
 ```
 
 ## 说明
