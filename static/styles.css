@@ -1,0 +1,11 @@
+body { background: #f8f9fa; }
+.sidebar {
+  width: 240px; min-height: 100vh; background: #0d6efd; color: #fff;
+}
+.sidebar a { color: #e7f1ff; text-decoration: none; }
+.sidebar a:hover { text-decoration: underline; }
+.log-box {
+  background: #111; color: #0f0; min-height: 200px; max-height: 300px; overflow:auto; padding: 8px;
+  border-radius: 4px;
+}
+.card { border-radius: 1rem; box-shadow: 0 0.25rem 1rem rgba(0,0,0,.05); }

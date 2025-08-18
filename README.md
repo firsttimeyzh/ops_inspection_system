@@ -1,0 +1,30 @@
+# 运维巡检系统
+
+- 单机运行，巡检多台服务器
+- 左侧菜单：首页 / 服务器日常巡检 / 服务器管理
+- 服务器管理：分组、增删服务器（密码AES-GCM加密存储）
+- 巡检：选择分组、填写项目名称与巡检人，进度实时显示（Socket.IO），完成后可下载按模板生成的 Word 报告
+- 日志：所有运行日志输出到 `logs/app.log`
+- 配置：端口/路径/阈值/AES 密钥等均在 `config.py`
+
+## 快速启动
+
+```bash
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# 可选：设置 AES 密钥（建议生产环境）
+# export OPS_AES_KEY=$(python - <<'PY'\nimport os,base64;print(base64.b64encode(os.urandom(32)).decode())\nPY)
+
+python app.py
+# 浏览器打开 http://localhost:5055
+```
+
+## 说明
+
+- Word 模板默认使用 `templates/word/日巡检记录模版.docx`。如需自定义，请在 `config.py` 将 `WORD_TEMPLATE` 指向你的模板路径或设置环境变量 `OPS_WORD_TEMPLATE`。
+- 阈值默认为 80%，可通过环境变量调整：`OPS_CPU_THRESHOLD`/`OPS_MEM_THRESHOLD`/`OPS_DISK_THRESHOLD`。
+- 服务器密码采用 AES-GCM 加密存储，密钥从 `OPS_AES_KEY`（base64/hex）或 `OPS_AES_KEY_FILE` 读取，均未设置时使用内置开发密钥（请勿用于生产）。
+- 巡检命令基于 `paramiko` 执行：`uptime -p`、`top -bn1`/`mpstat`、`free -m`、`df -P /`。
+- 生成的报告输出目录：`reports/`。

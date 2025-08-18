@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">服务器管理</h2>
+<div class="row g-3">
+  <div class="col-12 col-lg-4">
+    <div class="card p-3">
+      <h5>分组</h5>
+      <div class="input-group mb-2">
+        <input id="groupName" class="form-control" placeholder="新分组名称">
+        <button class="btn btn-outline-primary" onclick="addGroup()">添加</button>
+      </div>
+      <ul id="groupList" class="list-group mb-3">
+        {% for g in groups %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{g.name}}</span>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteGroup({{g.id}})">删除</button>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8">
+    <div class="card p-3">
+      <h5>新增服务器</h5>
+      <div class="row g-2 mb-3">
+        <div class="col"><input id="ip" class="form-control" placeholder="IP"></div>
+        <div class="col"><input id="port" class="form-control" placeholder="端口" value="22"></div>
+        <div class="col"><input id="username" class="form-control" placeholder="用户名"></div>
+        <div class="col"><input id="password" type="password" class="form-control" placeholder="密码（AES加密保存）"></div>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col">
+          <select id="serverGroup" class="form-select">
+            <option value="">选择分组（可选）</option>
+            {% for g in groups %}
+            <option value="{{g.id}}">{{g.name}}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col"><input id="notes" class="form-control" placeholder="备注（可选）"></div>
+        <div class="col"><button class="btn btn-primary w-100" onclick="addServer()">添加服务器</button></div>
+      </div>
+      <hr>
+      <h5>服务器列表</h5>
+      <div class="mb-2">
+        <select id="filterGroup" class="form-select" onchange="loadServers()">
+          <option value="">全部</option>
+          {% for g in groups %}
+          <option value="{{g.id}}">{{g.name}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <table class="table table-striped">
+        <thead><tr><th>IP</th><th>端口</th><th>用户名</th><th>分组</th><th>备注</th><th>操作</th></tr></thead>
+        <tbody id="serverTbody">
+          {% for s in servers %}
+          <tr>
+            <td>{{s.ip}}</td><td>{{s.port}}</td><td>{{s.username}}</td><td>{{s.group_name or ''}}</td><td>{{s.notes or ''}}</td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteServer({{s.id}})">删除</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

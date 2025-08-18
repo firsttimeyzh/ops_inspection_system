@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>运维巡检系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <div class="d-flex">
+      <nav class="sidebar p-3">
+        <h5 class="mb-4">运维巡检</h5>
+        <ul class="nav flex-column gap-2">
+          <li class="nav-item"><a class="nav-link" href="/">首页</a></li>
+          <li class="nav-item"><a class="nav-link" href="/inspect">服务器日常巡检</a></li>
+          <li class="nav-item"><a class="nav-link" href="/servers">服务器管理</a></li>
+        </ul>
+      </nav>
+      <main class="flex-fill p-4">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">服务器日常巡检</h2>
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card p-3">
+      <div class="mb-3">
+        <label class="form-label">项目名称</label>
+        <input id="projectName" class="form-control" placeholder="例如：XX数据中心日常巡检">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">巡检人</label>
+        <input id="inspector" class="form-control" placeholder="例如：张三">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">选择服务器分组（可选）</label>
+        <select id="selectGroup" class="form-select">
+          <option value="">全部服务器</option>
+          {% for g in groups %}
+          <option value="{{g.id}}">{{g.name}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="alert alert-secondary" role="alert">
+        阈值：CPU ≥ {{cpu}}% / 内存 ≥ {{mem}}% / 磁盘 ≥ {{disk}}% 将计入「异常问题描述」
+      </div>
+      <button id="btnStart" class="btn btn-success">开始巡检</button>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card p-3">
+      <h5>进度</h5>
+      <div class="progress mb-2" role="progressbar" aria-label="progress" aria-valuemin="0" aria-valuemax="100">
+        <div id="progressBar" class="progress-bar" style="width: 0%">0%</div>
+      </div>
+      <pre id="logBox" class="log-box"></pre>
+      <div id="downloadBox" class="mt-2"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
