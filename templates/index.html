@@ -1,12 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container-fluid">
-  <div class="p-5 mb-4 bg-light rounded-3">
-    <div class="container-fluid py-5">
-      <h1 class="display-5 fw-bold">运维巡检系统</h1>
-      <p class="col-md-8 fs-5">在一台服务器统一管理与巡检多台服务器，生成标准化巡检Word报告，支持分组、进度可视化与AES-GCM密码保护。</p>
-      <a href="/inspect" class="btn btn-primary btn-lg">开始巡检</a>
+<div class="page-header">
+  <h1 class="page-title" style="cursor: pointer;" onclick="showSidebar()">运维巡检系统</h1>
+  <p class="page-subtitle">统一管理服务器资产，自动执行日常巡检，生成标准化报告</p>
+</div>
+
+<div class="hero-section">
+  <h1>高效运维巡检</h1>
+  <p class="lead">批量检查服务器CPU、内存、磁盘使用情况，支持分组管理与报告导出</p>
+  <a href="/inspect" class="btn btn-primary btn-lg" style="background: white; color: #007AFF;">
+    开始巡检
+  </a>
+</div>
+
+<div class="feature-grid">
+  <a href="/servers" class="feature-card-link">
+    <div class="feature-card">
+      <div class="feature-icon" style="font-size: 1.5rem;">🖥️</div>
+      <div class="feature-title">服务器管理</div>
+      <div class="feature-desc">分组管理服务器资产，密码AES加密存储</div>
     </div>
-  </div>
+  </a>
+  
+  <a href="/inspect" class="feature-card-link">
+    <div class="feature-card">
+      <div class="feature-icon" style="font-size: 1.5rem;">🔍</div>
+      <div class="feature-title">服务器巡检</div>
+      <div class="feature-desc">自动检查CPU、内存、磁盘使用情况</div>
+    </div>
+  </a>
+  
+  <a href="/reports" class="feature-card-link">
+    <div class="feature-card">
+      <div class="feature-icon" style="font-size: 1.5rem;">📊</div>
+      <div class="feature-title">报告导出</div>
+      <div class="feature-desc">生成Excel/PDF格式巡检报告，便于存档分析</div>
+    </div>
+  </a>
 </div>
 {% endblock %}

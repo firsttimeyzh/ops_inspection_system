@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 from config import REPORT_DIR, CPU_THRESHOLD, MEM_THRESHOLD, DISK_THRESHOLD
 
@@ -18,88 +18,199 @@ def set_column_auto_width(ws):
                     max_length = max(max_length, len(str(cell.value)))
             except:
                 pass
-        adjusted_width = (max_length + 2)
+        adjusted_width = min(max(max_length + 2, 10), 30)
         ws.column_dimensions[col_letter].width = adjusted_width
 
 def generate_excel_report(project_name: str, inspector: str, date_str: str, rows: List[Dict[str, Any]]) -> str:
     wb = Workbook()
     ws = wb.active
-    ws.title = "日常巡检报告"
+    ws.title = "服务器巡检报告"
 
-    # 样式
-    bold_center = Font(bold=True)
-    red_font = Font(color="FF0000")
-    center = Alignment(horizontal="center", vertical="center")
-    border = Border(left=Side(style="thin"), right=Side(style="thin"),
-                    top=Side(style="thin"), bottom=Side(style="thin"))
+    # 定义样式
+    title_font = Font(bold=True, size=16, color="FF1a365d")
+    header_font = Font(bold=True, size=10, color="FFFFFFFF")
+    normal_font = Font(size=10)
+    bold_font = Font(bold=True, size=10)
+    red_font = Font(bold=True, size=10, color="FFdc2626")
+    green_font = Font(bold=True, size=10, color="FF059669")
+    orange_font = Font(bold=True, size=10, color="FFea580c")
+    
+    center_alignment = Alignment(horizontal="center", vertical="center")
+    left_alignment = Alignment(horizontal="left", vertical="center")
+    
+    thin_border = Border(
+        left=Side(style="thin", color="FFd1d5db"),
+        right=Side(style="thin", color="FFd1d5db"),
+        top=Side(style="thin", color="FFd1d5db"),
+        bottom=Side(style="thin", color="FFd1d5db")
+    )
+    
+    header_fill = PatternFill(start_color="FF1e40af", end_color="FF1e40af", fill_type="solid")
+    success_fill = PatternFill(start_color="FFd1fae5", end_color="FFd1fae5", fill_type="solid")
+    warning_fill = PatternFill(start_color="FFFFf3cd", end_color="FFFFf3cd", fill_type="solid")
+    danger_fill = PatternFill(start_color="FFfee2e2", end_color="FFfee2e2", fill_type="solid")
 
-    # 基本信息
-    ws["A1"], ws["B1"] = "项目名称", project_name
-    ws["A2"], ws["B2"] = "巡检人", inspector
-    ws["A3"], ws["B3"] = "巡检时间", date_str
-    for r in range(1, 4):
-        ws[f"A{r}"].font = bold_center
-        ws[f"A{r}"].alignment = center
-
-    # 空一行
+    # ========== 报告标题 ==========
+    ws.merge_cells("A1:F1")
+    title_cell = ws["A1"]
+    title_cell.value = "服务器巡检报告"
+    title_cell.font = title_font
+    title_cell.alignment = center_alignment
+    
     ws.append([])
-
-    # 服务器巡检记录表格
-    headers = ["服务器IP", "系统运行时间", "CPU占用情况", "内存使用情况", "磁盘空间占用情况"]
+    
+    # ========== 基本信息 ==========
+    info_labels = [
+        ("项目名称", project_name),
+        ("巡检人", inspector),
+        ("巡检时间", date_str),
+        ("检查数量", f"{len(rows)} 台")
+    ]
+    
+    for label, value in info_labels:
+        ws.append([label, value])
+        ws.cell(ws.max_row, 1).font = bold_font
+        ws.cell(ws.max_row, 2).font = normal_font
+    
+    ws.append([])
+    
+    # ========== 服务器巡检记录表头 ==========
+    headers = ["序号", "服务器IP", "系统运行时间", "CPU使用率", "内存使用率", "磁盘使用率", "状态"]
     ws.append(headers)
+    
     for c, h in enumerate(headers, start=1):
         cell = ws.cell(ws.max_row, c)
-        cell.font = bold_center
-        cell.alignment = center
-        cell.border = border
+        cell.font = header_font
+        cell.alignment = center_alignment
+        cell.border = thin_border
+        cell.fill = header_fill
 
-    for row in rows:
+    # ========== 巡检数据行 ==========
+    success_count = 0
+    fail_count = 0
+    warning_count = 0
+    
+    for idx, row in enumerate(rows, start=1):
+        is_ok = row.get("ok", False)
+        
+        if not is_ok:
+            status = "连接失败"
+            status_font = red_font
+            row_fill = danger_fill
+            fail_count += 1
+        else:
+            issues = []
+            if row.get("cpu", 0) > CPU_THRESHOLD:
+                issues.append("CPU")
+            if row.get("mem", 0) > MEM_THRESHOLD:
+                issues.append("内存")
+            if row.get("disk", 0) > DISK_THRESHOLD:
+                issues.append("磁盘")
+            
+            if issues:
+                status = f"告警({','.join(issues)})"
+                status_font = orange_font
+                row_fill = warning_fill
+                warning_count += 1
+            else:
+                status = "正常"
+                status_font = green_font
+                row_fill = success_fill
+                success_count += 1
+        
         data = [
+            idx,
             row.get("ip", ""),
-            row.get("uptime", ""),
-            f'{row.get("cpu",0)}%',
-            f'{row.get("mem",0)}%',
-            f'{row.get("disk",0)}%'
+            row.get("uptime", "未知"),
+            f'{row.get("cpu", 0)}%',
+            f'{row.get("mem", 0)}%',
+            f'{row.get("disk", 0)}%',
+            status
         ]
+        
         ws.append(data)
         for c in range(1, len(headers)+1):
             cell = ws.cell(ws.max_row, c)
-            cell.alignment = center
-            cell.border = border
-
-    # 空一行
+            cell.alignment = center_alignment
+            cell.border = thin_border
+            cell.fill = row_fill
+            if c == len(headers):
+                cell.font = status_font
+    
     ws.append([])
-    ws.append(["异常问题描述"])
-    ws.cell(ws.max_row, 1).font = bold_center
-
+    
+    # ========== 统计汇总 ==========
+    ws.merge_cells("A{}:F{}".format(ws.max_row + 1, ws.max_row + 1))
+    summary_title = ws.cell(ws.max_row + 1, 1)
+    summary_title.value = "巡检结果汇总"
+    summary_title.font = bold_font
+    summary_title.alignment = center_alignment
+    
+    summary_rows = [
+        ("巡检总数", f"{len(rows)} 台"),
+        ("正常运行", f"{success_count} 台"),
+        ("告警警告", f"{warning_count} 台"),
+        ("连接失败", f"{fail_count} 台"),
+        ("巡检成功率", f"{round(success_count/len(rows)*100, 1) if rows else 0}%")
+    ]
+    
+    for label, value in summary_rows:
+        ws.append([label, value])
+        ws.cell(ws.max_row, 1).font = normal_font
+        ws.cell(ws.max_row, 2).font = bold_font
+    
+    ws.append([])
+    
+    # ========== 异常问题详情 ==========
+    ws.merge_cells("A{}:F{}".format(ws.max_row + 1, ws.max_row + 1))
+    issue_title = ws.cell(ws.max_row + 1, 1)
+    issue_title.value = "异常问题详情"
+    issue_title.font = bold_font
+    issue_title.alignment = center_alignment
+    
     abnormal_lines = []
-    for r in rows:
+    for row in rows:
         reasons = []
-        if not r.get("ok"):
-            reasons.append(f'连接失败: {r.get("error","")}')
+        if not row.get("ok"):
+            reasons.append(f'连接失败: {row.get("error", "未知错误")}')
         else:
-            if r.get("cpu", 0) > CPU_THRESHOLD:
-                reasons.append(f'CPU {r["cpu"]}% > {CPU_THRESHOLD}%')
-            if r.get("mem", 0) > MEM_THRESHOLD:
-                reasons.append(f'内存 {r["mem"]}% > {MEM_THRESHOLD}%')
-            if r.get("disk", 0) > DISK_THRESHOLD:
-                reasons.append(f'磁盘 {r["disk"]}% > {DISK_THRESHOLD}%')
+            if row.get("cpu", 0) > CPU_THRESHOLD:
+                reasons.append(f'CPU使用率过高 {row["cpu"]}%')
+            if row.get("mem", 0) > MEM_THRESHOLD:
+                reasons.append(f'内存使用率过高 {row["mem"]}%')
+            if row.get("disk", 0) > DISK_THRESHOLD:
+                reasons.append(f'磁盘使用率过高 {row["disk"]}%')
+        
         if reasons:
-            abnormal_lines.append(f'{r.get("ip","")}: ' + "; ".join(reasons))
-
+            abnormal_lines.append(f"{row.get('ip', '未知IP')}: {'; '.join(reasons)}")
+    
     if abnormal_lines:
         for line in abnormal_lines:
             ws.append([line])
             ws.cell(ws.max_row, 1).font = red_font
+            ws.merge_cells(f"A{ws.max_row}:F{ws.max_row}")
     else:
-        ws.append(["无"])
-
+        ws.append(["本次巡检未发现异常问题"])
+        ws.cell(ws.max_row, 1).font = green_font
+        ws.merge_cells(f"A{ws.max_row}:F{ws.max_row}")
+    
+    ws.append([])
+    ws.append([])
+    
+    # ========== 签字区域 ==========
+    ws.append(["巡检人：", "", "审核人：", "", "日期：", ""])
+    ws.append(["", "", "", "", "", ""])
+    
+    for c in range(1, 7):
+        cell_below = ws.cell(ws.max_row, c)
+        cell_below.border = Border(bottom=Side(style="thin", color="FF4a5568"))
+    
     # 自动调整列宽
     set_column_auto_width(ws)
-
+    
     # 保存
     os.makedirs(REPORT_DIR, exist_ok=True)
-    fname = f"巡检报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    fname = f"服务器巡检报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     out_path = os.path.join(REPORT_DIR, fname)
     wb.save(out_path)
     return out_path
