@@ -36,7 +36,7 @@ function loadReports() {
         var ext = report.filename.split('.').pop().toUpperCase();
         var icon = ext === 'PDF' ? '📄' : '📊';
         html += '<tr>';
-        html += '<td><span class="file-icon">' + icon + '</span>' + report.filename + '</td>';
+        html += '<td><span class="file-icon">' + icon + '</span><a href="/api/preview_report/' + encodeURIComponent(report.filename) + '" target="_blank" class="report-link">' + report.filename + '</a></td>';
         html += '<td><span class="format-badge">' + ext + '</span></td>';
         html += '<td>' + report.mtime + '</td>';
         html += '<td>';

@@ -227,6 +227,26 @@ def download_report(filename):
     
     return send_from_directory(report_dir, filename, as_attachment=True)
 
+@app.route("/api/preview_report/<path:filename>")
+def preview_report(filename):
+    """在线预览报告文件"""
+    report_dir = os.path.join(os.path.dirname(__file__), 'reports')
+    filepath = os.path.join(report_dir, filename)
+    
+    if not os.path.exists(filepath):
+        return jsonify({"error": "文件不存在"}), 404
+    
+    if '..' in filename or filename.startswith('/'):
+        return jsonify({"error": "非法路径"}), 403
+    
+    ext = filename.split('.')[-1].lower()
+    if ext == 'pdf':
+        return send_from_directory(report_dir, filename, mimetype='application/pdf')
+    elif ext == 'xlsx':
+        return send_from_directory(report_dir, filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    else:
+        return send_from_directory(report_dir, filename)
+
 # ------------- Inspection Tasks -------------
 @app.route("/api/save_task", methods=["POST"])
 def api_save_task():

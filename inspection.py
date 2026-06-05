@@ -66,9 +66,17 @@ def inspect_server(ip: str, port: int, username: str, password: str, timeout: in
     }
     try:
         ssh.connect(ip, port=port, username=username, password=password, timeout=timeout)
-        # uptime
+        # uptime - 仅保留前2块
         uptime = run_cmd(ssh, "uptime -p || cat /proc/uptime")
-        res["uptime"] = uptime.replace("\n", " ").strip()
+        uptime_str = uptime.replace("\n", " ").strip()
+        # 解析 uptime -p 格式 (如 "up 2 days, 3 hours, 45 minutes")
+        if uptime_str.startswith("up "):
+            parts = uptime_str[3:].split(", ")
+            if len(parts) >= 2:
+                uptime_str = ", ".join(parts[:2])
+            elif len(parts) == 1:
+                uptime_str = parts[0]
+        res["uptime"] = uptime_str
 
         # cpu
         if check_cpu:

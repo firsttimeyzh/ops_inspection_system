@@ -929,6 +929,18 @@ main {
   border-radius: 12px;
 }
 
+.report-link {
+  color: var(--apple-blue);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.report-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
 .download-btn {
   display: inline-flex;
   align-items: center;

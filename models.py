@@ -309,10 +309,10 @@ def list_inspection_tasks():
             "check_disk": bool(row[8]),
             "enable_proxy": bool(row[9]),
             "proxy_rules": json.loads(row[10]) if row[10] else [],
-            "created_at": row[11],
-            "enable_schedule": bool(row[12]) if len(row) > 12 else False,
-            "schedule_time": row[13] if len(row) > 13 else None,
-            "last_run": row[14] if len(row) > 14 else None,
+            "enable_schedule": bool(row[11]) if len(row) > 11 else False,
+            "schedule_time": row[12] if len(row) > 12 else None,
+            "last_run": row[13] if len(row) > 13 else None,
+            "created_at": row[14] if len(row) > 14 else None,
             "resource_checks": ", ".join(resource_checks)
         })
     return tasks
@@ -338,10 +338,10 @@ def get_inspection_task(task_id: int):
             "check_disk": bool(row[8]),
             "enable_proxy": bool(row[9]),
             "proxy_rules": json.loads(row[10]) if row[10] else [],
-            "created_at": row[11],
-            "enable_schedule": bool(row[12]) if len(row) > 12 else False,
-            "schedule_time": row[13] if len(row) > 13 else None,
-            "last_run": row[14] if len(row) > 14 else None
+            "enable_schedule": bool(row[11]) if len(row) > 11 else False,
+            "schedule_time": row[12] if len(row) > 12 else None,
+            "last_run": row[13] if len(row) > 13 else None,
+            "created_at": row[14] if len(row) > 14 else None
         }
     return None
 
