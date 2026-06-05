@@ -1,51 +1,57 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-  <h1 class="page-title">服务器管理</h1>
-  <p class="page-subtitle">管理服务器资产，密码采用AES加密存储</p>
+  <h1 class="page-title">服务器管理界面</h1>
+  <p class="page-subtitle">管理服务器资产与分组配置</p>
 </div>
 
-<div class="row">
+<div class="row server-management-row">
   <!-- 左侧：分组管理 -->
-  <div class="col-lg-3">
-    <div class="apple-card">
-      <div class="apple-card-header">
-        <h3 class="apple-card-title">分组管理</h3>
+  <div class="col-lg-3 group-section">
+    <div class="card group-card">
+      <div class="card-header">
+        <div class="card-icon">📁</div>
+        <h3 class="card-title">分组管理</h3>
       </div>
       
-      <div class="form-section">
+      <div class="card-body">
         <div class="form-group">
           <label class="form-label">新建分组</label>
-          <div style="display: flex; gap: 0.5rem;">
+          <div class="input-group">
             <input type="text" id="groupName" class="form-control" placeholder="分组名称">
-            <button class="btn btn-primary" onclick="addGroup()" style="flex-shrink: 0;">添加</button>
+            <button class="btn btn-primary" onclick="addGroup()">添加</button>
           </div>
         </div>
-      </div>
-      
-      <div class="form-section">
+        
+        <div class="divider"></div>
+        
         <div class="form-section-title">已有分组</div>
-        <div class="list-group">
+        <div class="group-list">
           {% for g in groups %}
-          <div class="list-group-item">
-            <span class="list-group-item-content">{{g.name}}</span>
-            <button class="btn btn-sm btn-outline" onclick="deleteGroup({{g.id}})" style="padding: 0.375rem 0.75rem;">删除</button>
+          <div class="group-item">
+            <span class="group-name">{{g.name}}</span>
+            <button class="btn btn-sm btn-danger" onclick="deleteGroup({{g.id}})">删除</button>
           </div>
           {% endfor %}
+          {% if not groups %}
+          <div class="empty-state">暂无分组</div>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
   
   <!-- 右侧：服务器管理 -->
-  <div class="col-lg-9">
-    <div class="apple-card">
-      <div class="apple-card-header">
-        <h3 class="apple-card-title">新增服务器</h3>
+  <div class="col-lg-9 server-section">
+    <!-- 新增服务器卡片 -->
+    <div class="card server-card">
+      <div class="card-header">
+        <div class="card-icon">🖥️</div>
+        <h3 class="card-title">新增服务器</h3>
       </div>
       
-      <div class="form-section">
-        <div class="form-row form-row-4">
+      <div class="card-body">
+        <div class="form-grid">
           <div class="form-group">
             <label class="form-label">IP地址</label>
             <input type="text" id="ip" class="form-control" placeholder="192.168.1.100">
@@ -65,41 +71,43 @@
         </div>
         
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group full-width">
             <label class="form-label">所属分组（可多选）</label>
-            <div class="group-checkboxes" id="groupCheckboxes">
+            <div class="tags-container" id="groupCheckboxes">
               {% for g in groups %}
-              <label class="group-checkbox">
+              <label class="tag-checkbox">
                 <input type="checkbox" name="serverGroups" value="{{g.id}}">
                 <span>{{g.name}}</span>
               </label>
               {% endfor %}
+              {% if not groups %}
+              <span class="empty-hint">请先创建分组</span>
+              {% endif %}
             </div>
           </div>
         </div>
         
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group full-width">
             <label class="form-label">备注信息</label>
             <input type="text" id="notes" class="form-control" placeholder="可选备注">
           </div>
         </div>
         
         <div class="form-row">
-          <div class="form-group">
-            <button class="btn btn-primary btn-block" onclick="addServer()">
-              添加服务器
-            </button>
-          </div>
+          <button class="btn btn-primary btn-block" onclick="addServer()">
+            添加服务器
+          </button>
         </div>
       </div>
     </div>
     
-    <!-- 服务器列表 -->
-    <div class="apple-card" style="padding: 0;">
-      <div class="apple-card-header" style="padding: 1.5rem 2rem;">
-        <h3 class="apple-card-title">服务器列表</h3>
-        <div style="width: 250px;">
+    <!-- 服务器列表卡片 -->
+    <div class="card list-card">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <h3 class="card-title">服务器列表</h3>
+        <div class="filter-container">
           <select id="filterGroup" class="form-select" onchange="loadServers()">
             <option value="">全部分组</option>
             {% for g in groups %}
@@ -109,43 +117,51 @@
         </div>
       </div>
       
-      <div class="table-container" style="box-shadow: none; border-radius: 0;">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>IP地址</th>
-              <th>端口</th>
-              <th>用户名</th>
-              <th>所属分组</th>
-              <th>备注</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="serverTbody">
-            {% for s in servers %}
-            <tr>
-              <td style="font-weight: 500;">{{s.ip}}</td>
-              <td>{{s.port}}</td>
-              <td>{{s.username}}</td>
-              <td>
-                {% if s.group_names and s.group_names != '无' %}
-                  {% for group_name in s.group_names.split(', ') %}
-                    <span style="background: #f0f0f5; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8125rem; margin-right: 0.25rem; display: inline-block; margin-bottom: 0.25rem;">{{group_name}}</span>
-                  {% endfor %}
-                {% else %}
-                  <span style="color: #86868b;">-</span>
-                {% endif %}
-              </td>
-              <td style="color: #86868b;">{{s.notes or '-'}}</td>
-              <td>
-                <button class="btn btn-sm btn-outline" onclick="deleteServer({{s.id}})" style="color: #ff3b30; border-color: #ff3b30;">
-                  删除
-                </button>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="card-body">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>IP地址</th>
+                <th>端口</th>
+                <th>用户名</th>
+                <th>所属分组</th>
+                <th>备注</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="serverTbody">
+              {% for s in servers %}
+              <tr>
+                <td class="ip-cell">{{s.ip}}</td>
+                <td>{{s.port}}</td>
+                <td>{{s.username}}</td>
+                <td class="groups-cell">
+                  {% if s.group_names and s.group_names != '无' %}
+                    {% for group_name in s.group_names.split(', ') %}
+                      <span class="group-tag">{{group_name}}</span>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty-text">-</span>
+                  {% endif %}
+                </td>
+                <td class="notes-cell">{{s.notes or '-'}}</td>
+                <td>
+                  <button class="btn btn-sm btn-danger" onclick="deleteServer({{s.id}})">删除</button>
+                </td>
+              </tr>
+              {% endfor %}
+              {% if not servers %}
+              <tr>
+                <td colspan="6" class="empty-row">
+                  <span class="empty-icon">📭</span>
+                  <span>暂无服务器</span>
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

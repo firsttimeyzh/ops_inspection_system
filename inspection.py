@@ -52,7 +52,7 @@ def parse_disk(output: str) -> float:
                 pass
     return maxp
 
-def inspect_server(ip: str, port: int, username: str, password: str, timeout: int = 10) -> Dict[str, Any]:
+def inspect_server(ip: str, port: int, username: str, password: str, timeout: int = 10, check_cpu: bool = True, check_mem: bool = True, check_disk: bool = True) -> Dict[str, Any]:
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     res = {
@@ -71,18 +71,47 @@ def inspect_server(ip: str, port: int, username: str, password: str, timeout: in
         res["uptime"] = uptime.replace("\n", " ").strip()
 
         # cpu
-        cpu_out = run_cmd(ssh, "LANG=C top -bn1 | grep Cpu || mpstat | grep all || sar -u 1 1 | grep Average")
-        res["cpu"] = parse_cpu(cpu_out)
+        if check_cpu:
+            cpu_out = run_cmd(ssh, "LANG=C top -bn1 | grep Cpu || mpstat | grep all || sar -u 1 1 | grep Average")
+            res["cpu"] = parse_cpu(cpu_out)
 
         # mem
-        mem_out = run_cmd(ssh, "free -m")
-        res["mem"] = parse_mem(mem_out)
+        if check_mem:
+            mem_out = run_cmd(ssh, "free -m")
+            res["mem"] = parse_mem(mem_out)
 
         # disk (root mount)
-        disk_out = run_cmd(ssh, "df -P /")
-        res["disk"] = parse_disk(disk_out)
+        if check_disk:
+            disk_out = run_cmd(ssh, "df -P /")
+            res["disk"] = parse_disk(disk_out)
 
         res["ok"] = True
+    except Exception as e:
+        res["error"] = str(e)
+    finally:
+        try:
+            ssh.close()
+        except Exception:
+            pass
+    return res
+
+def test_proxy(ip: str, port: int, username: str, password: str, curl_cmd: str, success_keyword: str, timeout: int = 30) -> Dict[str, Any]:
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    res = {
+        "ip": ip,
+        "success": False,
+        "output": "",
+        "error": ""
+    }
+    try:
+        ssh.connect(ip, port=port, username=username, password=password, timeout=timeout)
+        output = run_cmd(ssh, curl_cmd, timeout=timeout)
+        res["output"] = output
+        
+        if success_keyword in output:
+            res["success"] = True
+        
     except Exception as e:
         res["error"] = str(e)
     finally:
