@@ -637,8 +637,68 @@ def api_download_report():
         return "Not Found", 404
     return send_file(path, as_attachment=True)
 
+# ---------------- Scheduler ----------------
+def run_scheduled_tasks():
+    """定时任务调度器"""
+    logger.info("调度器线程启动")
+    while True:
+        try:
+            now = datetime.now()
+            current_time = now.strftime("%H:%M")
+            
+            # 获取所有启用定时的任务
+            tasks = list_inspection_tasks()
+            
+            for task in tasks:
+                if task.get("enable_schedule") and task.get("schedule_time"):
+                    schedule_time = task["schedule_time"]
+                    
+                    # 检查是否到了执行时间（每分钟检查一次）
+                    if schedule_time == current_time:
+                        logger.info(f"[调度器] 执行定时任务: {task['name']}")
+                        run_id = now.strftime("%Y%m%d%H%M%S")
+                        thread = threading.Thread(target=run_inspection, args=(
+                            run_id,
+                            task["project_name"],
+                            task["inspector"],
+                            task["report_format"],
+                            task["resource_group_id"],
+                            task["check_cpu"],
+                            task["check_mem"],
+                            task["check_disk"],
+                            task["enable_proxy"],
+                            task["proxy_rules"],
+                            task["id"]
+                        ))
+                        thread.daemon = True
+                        thread.start()
+                        
+        except Exception as e:
+            logger.error(f"定时任务调度器错误: {e}")
+        
+        # 每分钟检查一次
+        time.sleep(60)
+
+def start_scheduler():
+    """启动定时任务调度器"""
+    scheduler_thread = threading.Thread(target=run_scheduled_tasks)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
+    logger.info("定时任务调度器已启动")
+
 def main():
     logger.info("Starting Ops Inspection System...")
+    # 启动定时任务调度器（只在主进程中启动，避免DEBUG模式重启时重复启动）
+    # Werkzeug在DEBUG模式下会fork一个子进程，子进程会设置WERKZEUG_RUN_MAIN环境变量
+    # 使用全局DEBUG变量而不是app.debug，因为app.debug此时可能还未设置
+    is_first_process = os.environ.get('WERKZEUG_RUN_MAIN') is None
+    if DEBUG:
+        # DEBUG模式：只有重启后的子进程才启动调度器
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            start_scheduler()
+    else:
+        # 非DEBUG模式：直接启动调度器
+        start_scheduler()
     socketio.run(app, host=HOST, port=PORT, debug=DEBUG, allow_unsafe_werkzeug=True)
 
 if __name__ == "__main__":
