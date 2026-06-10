@@ -10,6 +10,7 @@ from models import init_db, list_groups, add_group, delete_group, list_servers, 
 from crypto_utils import aes_gcm_encrypt, aes_gcm_decrypt
 from inspection import inspect_server, test_proxy
 from report_excel import generate_excel_report
+from captcha_utils import generate_captcha, generate_captcha_image
 
 # ---------------- Logging ----------------
 from config import LOG_DIR
@@ -28,6 +29,10 @@ logger = logging.getLogger("ops-app")
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['JSON_AS_ASCII'] = False
+app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_TYPE'] = 'filesystem'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # 角色定义
@@ -155,14 +160,42 @@ def login_page():
         return redirect(url_for('index'))
     return render_template("login.html")
 
+@app.route("/api/captcha")
+def api_captcha():
+    """获取验证码图片"""
+    captcha_text = generate_captcha()
+    session['captcha'] = captcha_text.lower()
+    image_buf = generate_captcha_image(captcha_text)
+    response = make_response(send_file(image_buf, mimetype='image/png'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+@app.route("/api/captcha_text")
+def api_captcha_text():
+    """获取当前session中的验证码文本（仅用于测试）"""
+    return jsonify({'captcha': session.get('captcha', '')})
+
 @app.route("/api/login", methods=["POST"])
 def api_login():
     data = request.json
     username = data.get('username', '').strip()
     password = data.get('password', '').strip()
+    captcha = data.get('captcha', '').strip().lower()
     
     if not username or not password:
         return jsonify({'success': False, 'message': '用户名和密码不能为空'})
+    
+    if not captcha:
+        return jsonify({'success': False, 'message': '请输入验证码'})
+    
+    session_captcha = session.get('captcha', '').lower()
+    if captcha != session_captcha:
+        session.pop('captcha', None)
+        return jsonify({'success': False, 'message': '验证码错误'})
+    
+    session.pop('captcha', None)
     
     user = get_user(username)
     if not user:
@@ -360,6 +393,9 @@ def reports_page():
 
 # --------- APIs: groups & servers ----------
 @app.route("/api/groups", methods=["GET", "POST", "DELETE"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_groups():
     if request.method == "GET":
         return jsonify(list_groups())
@@ -402,6 +438,8 @@ def api_servers():
 
 # ------------- Reports -------------
 @app.route("/api/reports", methods=["GET"])
+@no_cache
+@login_required
 def api_list_reports():
     """获取报告列表"""
     reports = []
@@ -423,6 +461,9 @@ def api_list_reports():
     return jsonify(reports)
 
 @app.route("/api/reports/<path:filename>", methods=["DELETE"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_delete_report(filename):
     """删除报告"""
     report_dir = os.path.join(os.path.dirname(__file__), 'reports')
@@ -444,6 +485,9 @@ def api_delete_report(filename):
         return jsonify({'message': f'删除失败: {str(e)}'}), 500
 
 @app.route("/api/proxy-test", methods=["POST"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_proxy_test():
     """网关代理检测"""
     try:
@@ -485,6 +529,7 @@ def api_proxy_test():
         return jsonify({'success': False, 'message': f'检测失败: {str(e)}'}), 500
 
 @app.route("/download/<path:filename>")
+@login_required
 def download_report(filename):
     """下载报告文件"""
     report_dir = os.path.join(os.path.dirname(__file__), 'reports')
@@ -500,6 +545,7 @@ def download_report(filename):
     return send_from_directory(report_dir, filename, as_attachment=True)
 
 @app.route("/api/preview_report/<path:filename>")
+@login_required
 def preview_report(filename):
     """在线预览报告文件"""
     report_dir = os.path.join(os.path.dirname(__file__), 'reports')
@@ -521,6 +567,9 @@ def preview_report(filename):
 
 # ------------- Inspection Tasks -------------
 @app.route("/api/save_task", methods=["POST"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_save_task():
     data = request.json or {}
     task_name = data.get("task_name", "")
@@ -562,6 +611,9 @@ def api_save_task():
 
 
 @app.route("/api/task", methods=["GET"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_get_task():
     task_id = request.args.get("id")
     if not task_id:
@@ -575,6 +627,9 @@ def api_get_task():
 
 
 @app.route("/api/update_task", methods=["POST"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_update_task():
     data = request.json or {}
     task_id = data.get("id")
@@ -624,6 +679,9 @@ def api_update_task():
 
 
 @app.route("/api/toggle_schedule", methods=["POST"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_toggle_schedule():
     data = request.json or {}
     task_id = data.get("id")
@@ -639,6 +697,9 @@ def api_toggle_schedule():
     return jsonify({"ok": True, "msg": "定时状态已切换"})
 
 @app.route("/api/run_task", methods=["POST"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_run_task():
     data = request.json or {}
     task_id = data.get("task_id")
@@ -667,6 +728,9 @@ def api_run_task():
     return jsonify({"ok": True, "run_id": run_id})
 
 @app.route("/api/delete_task", methods=["POST"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_delete_task():
     data = request.json or {}
     task_id = data.get("task_id")
@@ -680,6 +744,9 @@ def api_delete_task():
 
 # ------------- Start Inspection -------------
 @app.route("/api/start_inspection", methods=["POST"])
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def api_start_inspection():
     data = request.json or {}
     project_name = data.get("project_name","")
@@ -896,6 +963,8 @@ def run_inspection(run_id: str, project_name: str, inspector: str, report_format
         update_task_last_run(task_id)
 
 @app.route("/api/inspection_progress")
+@no_cache
+@login_required
 def api_inspection_progress():
     run_id = request.args.get("run_id")
     if run_id and run_id in inspection_progress:
@@ -903,6 +972,8 @@ def api_inspection_progress():
     return jsonify({"message": "", "percent": 0})
 
 @app.route("/api/download_report")
+@no_cache
+@login_required
 def api_download_report():
     path = request.args.get("path")
     if not path or not os.path.exists(path):
@@ -989,18 +1060,16 @@ def start_scheduler():
 
 def main():
     logger.info("Starting Ops Inspection System...")
-    # 启动定时任务调度器（只在主进程中启动，避免DEBUG模式重启时重复启动）
-    # Werkzeug在DEBUG模式下会fork一个子进程，子进程会设置WERKZEUG_RUN_MAIN环境变量
-    # 使用全局DEBUG变量而不是app.debug，因为app.debug此时可能还未设置
-    is_first_process = os.environ.get('WERKZEUG_RUN_MAIN') is None
-    if DEBUG:
-        # DEBUG模式：只有重启后的子进程才启动调度器
-        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            start_scheduler()
-    else:
-        # 非DEBUG模式：直接启动调度器
-        start_scheduler()
-    socketio.run(app, host=HOST, port=PORT, debug=DEBUG, allow_unsafe_werkzeug=True)
+    # 启动定时任务调度器
+    start_scheduler()
+    
+    try:
+        # 尝试使用eventlet服务器
+        socketio.run(app, host=HOST, port=PORT, debug=DEBUG, allow_unsafe_werkzeug=True)
+    except TypeError as e:
+        # Python 3.14与Werkzeug兼容性问题回退
+        logger.warning(f"SocketIO启动失败，尝试直接使用Flask: {e}")
+        app.run(host=HOST, port=PORT, debug=DEBUG, threaded=True)
 
 if __name__ == "__main__":
     main()
