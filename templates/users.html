@@ -125,9 +125,9 @@
 <script>
 function loadUsers() {
   fetch('/api/users', { credentials: 'include' })
-    .then(response => response.json())
-    .then(data => {
-      const tbody = document.getElementById('user-list');
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var tbody = document.getElementById('user-list');
       tbody.innerHTML = '';
       
       if (data.length === 0) {
@@ -135,37 +135,37 @@ function loadUsers() {
         return;
       }
       
-      data.forEach(user => {
-        const roleText = {
+      for (var i = 0; i < data.length; i++) {
+        var user = data[i];
+        var roleMap = {
           'admin': '超级管理员',
           'operator': '系统操作员',
           'viewer': '报告查看员'
-        }[user.role] || user.role;
+        };
+        var roleText = roleMap[user.role] || user.role;
         
-        const statusText = user.is_default ? '系统默认' : '普通用户';
-        const statusClass = user.is_default ? 'status-default' : 'status-normal';
+        var statusText = user.is_default ? '系统默认' : '普通用户';
+        var statusClass = user.is_default ? 'status-default' : 'status-normal';
         
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${user.id}</td>
-          <td>${user.username}</td>
-          <td>${user.display_name || '-'}</td>
-          <td>${user.contact || '-'}</td>
-          <td><span class="role-badge ${user.role}">${roleText}</span></td>
-          <td>${user.created_at}</td>
-          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-          <td>
-            <button class="btn btn-primary btn-sm" onclick="showEditUserModal(${user.id}, '${user.username}', '${user.display_name || ''}', '${user.contact || ''}', '${user.role}')">编辑</button>
-            ${user.is_default ? 
-              ' <span class="disabled">无法删除</span>' : 
-              `<button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id}, '${user.username}')">删除</button>`
-            }
-          </td>
-        `;
+        var row = document.createElement('tr');
+        var deleteBtn = user.is_default ? ' <span class="disabled">无法删除</span>' : '<button class="btn btn-danger btn-sm" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')">删除</button>';
+        row.innerHTML = '<tr>' +
+          '<td>' + user.id + '</td>' +
+          '<td>' + user.username + '</td>' +
+          '<td>' + (user.display_name || '-') + '</td>' +
+          '<td>' + (user.contact || '-') + '</td>' +
+          '<td><span class="role-badge ' + user.role + '">' + roleText + '</span></td>' +
+          '<td>' + user.created_at + '</td>' +
+          '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>' +
+          '<td>' +
+          '<button class="btn btn-primary btn-sm" onclick="showEditUserModal(' + user.id + ', \'' + user.username + '\', \'' + (user.display_name || '') + '\', \'' + (user.contact || '') + '\', \'' + user.role + '\')">编辑</button>' +
+          deleteBtn +
+          '</td>' +
+          '</tr>';
         tbody.appendChild(row);
-      });
+      }
     })
-    .catch(error => {
+    .catch(function(error) {
       console.error('加载用户列表失败:', error);
       document.getElementById('user-list').innerHTML = '<tr><td colspan="7" class="error">加载失败</td></tr>';
     });
@@ -181,18 +181,18 @@ function hideAddUserModal() {
 }
 
 function validateDisplayName(displayName) {
-  const regex = /^[\u4e00-\u9fa50-9]+$/;
+  var regex = /^[\u4e00-\u9fa50-9]+$/;
   return regex.test(displayName);
 }
 
-document.getElementById('add-user-form').addEventListener('submit', async function(e) {
+document.getElementById('add-user-form').addEventListener('submit', function(e) {
   e.preventDefault();
   
-  const username = document.getElementById('new-username').value;
-  const displayName = document.getElementById('new-display-name').value;
-  const contact = document.getElementById('new-contact').value;
-  const password = document.getElementById('new-password').value;
-  const role = document.getElementById('new-role').value;
+  var username = document.getElementById('new-username').value;
+  var displayName = document.getElementById('new-display-name').value;
+  var contact = document.getElementById('new-contact').value;
+  var password = document.getElementById('new-password').value;
+  var role = document.getElementById('new-role').value;
   
   if (!validateDisplayName(displayName)) {
     alert('用户名称仅允许中文和数字');
@@ -204,23 +204,22 @@ document.getElementById('add-user-form').addEventListener('submit', async functi
     return;
   }
   
-  try {
-    const response = await fetch('/api/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify({ username, display_name: displayName, contact, password, role })
-    });
-    
+  fetch('/api/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    body: JSON.stringify({ username: username, display_name: displayName, contact: contact, password: password, role: role })
+  })
+  .then(function(response) {
     if (!response.ok) {
-      alert(`HTTP错误: ${response.status} - ${response.statusText}`);
+      alert('HTTP错误: ' + response.status + ' - ' + response.statusText);
       return;
     }
-    
-    const result = await response.json();
-    
+    return response.json();
+  })
+  .then(function(result) {
     if (result.success) {
       alert('用户创建成功');
       hideAddUserModal();
@@ -228,10 +227,11 @@ document.getElementById('add-user-form').addEventListener('submit', async functi
     } else {
       alert(result.message || '创建失败');
     }
-  } catch (error) {
+  })
+  .catch(function(error) {
     console.error('创建用户错误:', error);
-    alert(`网络错误: ${error.message || '未知错误'}`);
-  }
+    alert('网络错误: ' + (error.message || '未知错误'));
+  });
 });
 
 function validatePassword(password) {
@@ -252,33 +252,33 @@ function hideEditUserModal() {
   document.getElementById('edit-user-modal').style.display = 'none';
 }
 
-document.getElementById('edit-user-form').addEventListener('submit', async function(e) {
+document.getElementById('edit-user-form').addEventListener('submit', function(e) {
   e.preventDefault();
   
-  const userId = document.getElementById('edit-user-id').value;
-  const username = document.getElementById('edit-username').value;
-  const displayName = document.getElementById('edit-display-name').value;
-  const contact = document.getElementById('edit-contact').value;
-  const password = document.getElementById('edit-password').value;
-  const role = document.getElementById('edit-role').value;
+  var userId = document.getElementById('edit-user-id').value;
+  var username = document.getElementById('edit-username').value;
+  var displayName = document.getElementById('edit-display-name').value;
+  var contact = document.getElementById('edit-contact').value;
+  var password = document.getElementById('edit-password').value;
+  var role = document.getElementById('edit-role').value;
   
   if (password && !validatePassword(password)) {
     alert('密码必须包含大小写字母组合');
     return;
   }
   
-  try {
-    const response = await fetch(`/api/users/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify({ username, display_name: displayName, contact, password, role })
-    });
-    
-    const result = await response.json();
-    
+  fetch('/api/users/' + userId, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    body: JSON.stringify({ username: username, display_name: displayName, contact: contact, password: password, role: role })
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(result) {
     if (result.success) {
       alert('用户信息更新成功');
       hideEditUserModal();
@@ -286,22 +286,25 @@ document.getElementById('edit-user-form').addEventListener('submit', async funct
     } else {
       alert(result.message || '更新失败');
     }
-  } catch (error) {
+  })
+  .catch(function(error) {
     alert('网络错误');
-  }
+  });
 });
 
 function deleteUser(userId, username) {
-  if (!confirm(`确定要删除用户 "${username}" 吗？`)) {
+  if (!confirm('确定要删除用户 "' + username + '" 吗？')) {
     return;
   }
   
-  fetch(`/api/users/${userId}`, {
+  fetch('/api/users/' + userId, {
     method: 'DELETE',
     credentials: 'include'
   })
-  .then(response => response.json())
-  .then(result => {
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(result) {
     if (result.success) {
       alert('删除成功');
       loadUsers();
@@ -309,7 +312,7 @@ function deleteUser(userId, username) {
       alert(result.message || '删除失败');
     }
   })
-  .catch(error => {
+  .catch(function(error) {
     alert('网络错误');
   });
 }

@@ -67,7 +67,8 @@ function deleteReport(filename) {
     })
     .catch(function(error) {
       console.error('删除报告失败:', error);
-      alert('删除失败: ' + (error.response?.data?.message || '未知错误'));
+      var errorMsg = error.response && error.response.data && error.response.data.message ? error.response.data.message : '未知错误';
+      alert('删除失败: ' + errorMsg);
     });
 }
 </script>

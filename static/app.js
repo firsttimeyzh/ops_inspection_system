@@ -1,17 +1,17 @@
 // 侧边栏切换功能
 function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
+  var sidebar = document.getElementById('sidebar');
   sidebar.classList.toggle('collapsed');
 }
 
 function showSidebar() {
-  const sidebar = document.getElementById('sidebar');
+  var sidebar = document.getElementById('sidebar');
   sidebar.classList.remove('collapsed');
 }
 
 // 全局辅助函数
 function log(msg) {
-  const el = document.getElementById('logBox');
+  var el = document.getElementById('logBox');
   if (el) {
     el.textContent += msg + "\n";
     el.scrollTop = el.scrollHeight;
@@ -19,8 +19,8 @@ function log(msg) {
 }
 
 function setProgress(v) {
-  const bar = document.getElementById('progressBar');
-  const percent = document.getElementById('progressPercent');
+  var bar = document.getElementById('progressBar');
+  var percent = document.getElementById('progressPercent');
   if (bar) {
     bar.style.width = v + "%";
   }
@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM loaded - app.js initialized');
   
   // 网关代理检测启用/禁用切换
-  const enableProxyCheck = document.getElementById('enableProxyCheck');
-  const proxyConfig = document.getElementById('proxyConfig');
+  var enableProxyCheck = document.getElementById('enableProxyCheck');
+  var proxyConfig = document.getElementById('proxyConfig');
   if (enableProxyCheck && proxyConfig) {
     enableProxyCheck.addEventListener('change', function() {
       proxyConfig.style.display = this.checked ? 'block' : 'none';
@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // 定时配置
-  const enableSchedule = document.getElementById('enableSchedule');
-  const scheduleConfig = document.getElementById('scheduleConfig');
+  var enableSchedule = document.getElementById('enableSchedule');
+  var scheduleConfig = document.getElementById('scheduleConfig');
   if (enableSchedule && scheduleConfig) {
     enableSchedule.addEventListener('change', function() {
       scheduleConfig.style.display = this.checked ? 'block' : 'none';
@@ -58,16 +58,16 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // 添加代理检测规则
-  const addProxyRuleBtn = document.getElementById('addProxyRule');
-  const proxyRulesList = document.getElementById('proxyRulesList');
+  var addProxyRuleBtn = document.getElementById('addProxyRule');
+  var proxyRulesList = document.getElementById('proxyRulesList');
   if (addProxyRuleBtn && proxyRulesList) {
     addProxyRuleBtn.addEventListener('click', function() {
-      const rules = proxyRulesList.querySelectorAll('.inspect-proxy-rule-row');
-      const newIndex = rules.length;
+      var rules = proxyRulesList.querySelectorAll('.inspect-proxy-rule-row');
+      var newIndex = rules.length;
       
-      let newRule;
+      var newRule;
       if (rules.length > 0) {
-        const firstRule = rules[0];
+        var firstRule = rules[0];
         newRule = firstRule.cloneNode(true);
         newRule.setAttribute('data-index', newIndex);
         
@@ -78,25 +78,25 @@ document.addEventListener('DOMContentLoaded', function() {
         newRule = document.createElement('div');
         newRule.className = 'inspect-proxy-rule-row';
         newRule.setAttribute('data-index', newIndex);
-        newRule.innerHTML = `
-          <div class="inspect-proxy-rule-item">
-            <label class="inspect-proxy-label">服务器</label>
-            <select class="inspect-proxy-select proxy-group-select">
-              <option value="">全部</option>
-            </select>
-          </div>
-          <div class="inspect-proxy-rule-item inspect-proxy-rule-item-large">
-            <label class="inspect-proxy-label">CURL命令</label>
-            <input type="text" class="inspect-proxy-input proxy-curl-command" placeholder='curl -s http://127.0.0.1:8080/api/health'>
-          </div>
-          <div class="inspect-proxy-rule-item">
-            <label class="inspect-proxy-label">关键词</label>
-            <input type="text" class="inspect-proxy-input-short proxy-success-keyword" value="成功" placeholder="成功">
-          </div>
-          <button type="button" class="inspect-btn inspect-btn-delete remove-proxy-rule" style="display: inline-flex;">
-            删除
-          </button>
-        `;
+        newRule.innerHTML = [
+          '<div class="inspect-proxy-rule-item">',
+          '<label class="inspect-proxy-label">服务器</label>',
+          '<select class="inspect-proxy-select proxy-group-select">',
+          '<option value="">全部</option>',
+          '</select>',
+          '</div>',
+          '<div class="inspect-proxy-rule-item inspect-proxy-rule-item-large">',
+          '<label class="inspect-proxy-label">CURL命令</label>',
+          '<input type="text" class="inspect-proxy-input proxy-curl-command" placeholder="curl -s http://127.0.0.1:8080/api/health">',
+          '</div>',
+          '<div class="inspect-proxy-rule-item">',
+          '<label class="inspect-proxy-label">关键词</label>',
+          '<input type="text" class="inspect-proxy-input-short proxy-success-keyword" value="成功" placeholder="成功">',
+          '</div>',
+          '<button type="button" class="inspect-btn inspect-btn-delete remove-proxy-rule" style="display: inline-flex;">',
+          '删除',
+          '</button>'
+        ].join('');
       }
       
       proxyRulesList.appendChild(newRule);
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (proxyRulesList) {
     proxyRulesList.addEventListener('click', function(e) {
       if (e.target.classList.contains('remove-proxy-rule')) {
-        const rule = e.target.closest('.inspect-proxy-rule-row');
+        var rule = e.target.closest('.inspect-proxy-rule-row');
         if (rule) {
           rule.remove();
           updateRemoveButtons();
@@ -120,33 +120,34 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   function updateRemoveButtons() {
-    const rules = proxyRulesList?.querySelectorAll('.inspect-proxy-rule-row');
+    var rules = proxyRulesList ? proxyRulesList.querySelectorAll('.inspect-proxy-rule-row') : null;
     if (rules) {
-      rules.forEach((rule) => {
-        const removeBtn = rule.querySelector('.remove-proxy-rule');
+      for (var i = 0; i < rules.length; i++) {
+        var rule = rules[i];
+        var removeBtn = rule.querySelector('.remove-proxy-rule');
         if (removeBtn) {
           removeBtn.style.display = 'inline-flex';
         }
-      });
+      }
     }
   }
   
   // 巡检页面逻辑
-  const btnStart = document.getElementById('btnStart');
-  const btnSaveTask = document.getElementById('btnSaveTask');
+  var btnStart = document.getElementById('btnStart');
+  var btnSaveTask = document.getElementById('btnSaveTask');
   
   if (btnStart) {
     console.log('btnStart found, adding click handler');
-    let currentRun = null;
-    let pollInterval = null;
-    let lastMessage = '';
+    var currentRun = null;
+    var pollInterval = null;
+    var lastMessage = '';
     
     function pollProgress() {
       if (!currentRun) return;
       
       axios.get('/api/inspection_progress', { params: { run_id: currentRun } })
         .then(function(resp) {
-          const data = resp.data;
+          var data = resp.data;
           if (data.message && data.message !== lastMessage) {
             log(data.message);
             lastMessage = data.message;
@@ -155,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setProgress(data.percent);
           }
           if (data.report_path) {
-            const box = document.getElementById('downloadBox');
+            var box = document.getElementById('downloadBox');
             box.innerHTML = '<a href="/api/download_report?path=' + encodeURIComponent(data.report_path) + '" class="btn btn-primary">下载巡检报告</a>';
             if (pollInterval) {
               clearInterval(pollInterval);
@@ -168,27 +169,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    btnStart.addEventListener('click', async function() {
+    btnStart.addEventListener('click', function() {
       console.log('开始巡检按钮被点击');
       
-      const projectName = document.getElementById('projectName').value.trim();
-      const inspector = document.getElementById('inspector').value.trim();
-      const formatRadio = document.querySelector('input[name="reportFormat"]:checked');
-      const format = formatRadio ? formatRadio.value : 'excel';
+      var projectName = document.getElementById('projectName').value.trim();
+      var inspector = document.getElementById('inspector').value.trim();
+      var formatRadio = document.querySelector('input[name="reportFormat"]:checked');
+      var format = formatRadio ? formatRadio.value : 'excel';
       
-      const resourceGroup = document.getElementById('resourceGroup').value;
-      const checkCpu = document.getElementById('checkCpu').checked;
-      const checkMem = document.getElementById('checkMem').checked;
-      const checkDisk = document.getElementById('checkDisk').checked;
+      var resourceGroup = document.getElementById('resourceGroup').value;
+      var checkCpu = document.getElementById('checkCpu').checked;
+      var checkMem = document.getElementById('checkMem').checked;
+      var checkDisk = document.getElementById('checkDisk').checked;
       
-      const enableProxy = document.getElementById('enableProxyCheck').checked;
-      const proxyRules = [];
+      var enableProxy = document.getElementById('enableProxyCheck').checked;
+      var proxyRules = [];
       if (enableProxy) {
-        const ruleElements = document.querySelectorAll('.inspect-proxy-rule-row');
-        ruleElements.forEach((rule) => {
-          const groupId = rule.querySelector('.proxy-group-select').value;
-          const curlCmd = rule.querySelector('.proxy-curl-command').value.trim();
-          const keyword = rule.querySelector('.proxy-success-keyword').value.trim() || '成功';
+        var ruleElements = document.querySelectorAll('.inspect-proxy-rule-row');
+        for (var i = 0; i < ruleElements.length; i++) {
+          var rule = ruleElements[i];
+          var groupId = rule.querySelector('.proxy-group-select').value;
+          var curlCmd = rule.querySelector('.proxy-curl-command').value.trim();
+          var keyword = rule.querySelector('.proxy-success-keyword').value.trim() || '成功';
           if (curlCmd) {
             proxyRules.push({
               group_id: groupId,
@@ -196,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
               success_keyword: keyword
             });
           }
-        });
+        }
       }
       
       if (!projectName) {
@@ -225,23 +227,23 @@ document.addEventListener('DOMContentLoaded', function() {
       
       document.getElementById('progressCard').style.display = 'block';
       
-      try {
-        const resp = await axios.post('/api/start_inspection', { 
-          project_name: projectName, 
-          inspector: inspector, 
-          report_format: format,
-          resource_group_id: resourceGroup,
-          check_cpu: checkCpu,
-          check_mem: checkMem,
-          check_disk: checkDisk,
-          enable_proxy: enableProxy,
-          proxy_rules: proxyRules
-        });
+      axios.post('/api/start_inspection', { 
+        project_name: projectName, 
+        inspector: inspector, 
+        report_format: format,
+        resource_group_id: resourceGroup,
+        check_cpu: checkCpu,
+        check_mem: checkMem,
+        check_disk: checkDisk,
+        enable_proxy: enableProxy,
+        proxy_rules: proxyRules
+      })
+      .then(function(resp) {
         currentRun = resp.data.run_id;
         log('已开始巡检，运行ID: ' + currentRun);
         log('报告格式: ' + (format === 'excel' ? 'Excel' : 'PDF'));
         
-        const resourceItems = [];
+        var resourceItems = [];
         if (checkCpu) resourceItems.push('CPU');
         if (checkMem) resourceItems.push('内存');
         if (checkDisk) resourceItems.push('磁盘');
@@ -254,9 +256,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         pollInterval = setInterval(pollProgress, 1000);
-      } catch (error) {
-        log('错误：' + (error.response?.data?.msg || error.message));
-      }
+      })
+      .catch(function(error) {
+        var errorMsg = error.response && error.response.data && error.response.data.msg ? error.response.data.msg : error.message;
+        log('错误：' + errorMsg);
+      });
     });
   } else {
     console.log('btnStart not found');
@@ -264,28 +268,29 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (btnSaveTask) {
     console.log('btnSaveTask found, adding click handler');
-    btnSaveTask.addEventListener('click', async function() {
+    btnSaveTask.addEventListener('click', function() {
       console.log('保存任务按钮被点击');
       
-      const taskName = document.getElementById('taskName').value.trim();
-      const projectName = document.getElementById('projectName').value.trim();
-      const inspector = document.getElementById('inspector').value.trim();
-      const formatRadio = document.querySelector('input[name="reportFormat"]:checked');
-      const format = formatRadio ? formatRadio.value : 'excel';
+      var taskName = document.getElementById('taskName').value.trim();
+      var projectName = document.getElementById('projectName').value.trim();
+      var inspector = document.getElementById('inspector').value.trim();
+      var formatRadio = document.querySelector('input[name="reportFormat"]:checked');
+      var format = formatRadio ? formatRadio.value : 'excel';
       
-      const resourceGroup = document.getElementById('resourceGroup').value;
-      const checkCpu = document.getElementById('checkCpu').checked;
-      const checkMem = document.getElementById('checkMem').checked;
-      const checkDisk = document.getElementById('checkDisk').checked;
+      var resourceGroup = document.getElementById('resourceGroup').value;
+      var checkCpu = document.getElementById('checkCpu').checked;
+      var checkMem = document.getElementById('checkMem').checked;
+      var checkDisk = document.getElementById('checkDisk').checked;
       
-      const enableProxy = document.getElementById('enableProxyCheck').checked;
-      const proxyRules = [];
+      var enableProxy = document.getElementById('enableProxyCheck').checked;
+      var proxyRules = [];
       if (enableProxy) {
-        const ruleElements = document.querySelectorAll('.inspect-proxy-rule-row');
-        ruleElements.forEach((rule) => {
-          const groupId = rule.querySelector('.proxy-group-select').value;
-          const curlCmd = rule.querySelector('.proxy-curl-command').value.trim();
-          const keyword = rule.querySelector('.proxy-success-keyword').value.trim() || '成功';
+        var ruleElements = document.querySelectorAll('.inspect-proxy-rule-row');
+        for (var i = 0; i < ruleElements.length; i++) {
+          var rule = ruleElements[i];
+          var groupId = rule.querySelector('.proxy-group-select').value;
+          var curlCmd = rule.querySelector('.proxy-curl-command').value.trim();
+          var keyword = rule.querySelector('.proxy-success-keyword').value.trim() || '成功';
           if (curlCmd) {
             proxyRules.push({
               group_id: groupId,
@@ -293,11 +298,11 @@ document.addEventListener('DOMContentLoaded', function() {
               success_keyword: keyword
             });
           }
-        });
+        }
       }
       
-      const enableSchedule = document.getElementById('enableSchedule').checked;
-      const scheduleTime = enableSchedule ? document.getElementById('scheduleTime').value : '';
+      var enableSchedule = document.getElementById('enableSchedule').checked;
+      var scheduleTime = enableSchedule ? document.getElementById('scheduleTime').value : '';
       
       if (!taskName) {
         alert('请输入任务名称');
@@ -312,130 +317,138 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
-      try {
-        const resp = await axios.post('/api/save_task', {
-          task_name: taskName,
-          project_name: projectName,
-          inspector: inspector,
-          report_format: format,
-          resource_group_id: resourceGroup,
-          check_cpu: checkCpu,
-          check_mem: checkMem,
-          check_disk: checkDisk,
-          enable_proxy: enableProxy,
-          proxy_rules: proxyRules,
-          enable_schedule: enableSchedule,
-          schedule_time: scheduleTime
-        });
-        
+      axios.post('/api/save_task', {
+        task_name: taskName,
+        project_name: projectName,
+        inspector: inspector,
+        report_format: format,
+        resource_group_id: resourceGroup,
+        check_cpu: checkCpu,
+        check_mem: checkMem,
+        check_disk: checkDisk,
+        enable_proxy: enableProxy,
+        proxy_rules: proxyRules,
+        enable_schedule: enableSchedule,
+        schedule_time: scheduleTime
+      })
+      .then(function(resp) {
         if (resp.data.ok) {
           alert('任务保存成功！');
         } else {
           alert('保存失败: ' + resp.data.msg);
         }
-      } catch (error) {
-        alert('保存失败: ' + (error.response?.data?.msg || error.message));
-      }
+      })
+      .catch(function(error) {
+        var errorMsg = error.response && error.response.data && error.response.data.msg ? error.response.data.msg : error.message;
+        alert('保存失败: ' + errorMsg);
+      });
     });
   } else {
     console.log('btnSaveTask not found');
   }
   
   // 分组管理
-  const addGroupBtn = document.querySelector('button[onclick="addGroup()"]');
+  var addGroupBtn = document.querySelector('button[onclick="addGroup()"]');
   if (addGroupBtn) {
     console.log('addGroupBtn found');
   }
   
   // 服务器管理
-  const addServerBtn = document.querySelector('button[onclick="addServer()"]');
+  var addServerBtn = document.querySelector('button[onclick="addServer()"]');
   if (addServerBtn) {
     console.log('addServerBtn found');
   }
 });
 
 // 添加分组
-async function addGroup() {
+function addGroup() {
   console.log('addGroup called');
-  const name = document.getElementById('groupName').value.trim();
+  var name = document.getElementById('groupName').value.trim();
   if (!name) {
     alert('请输入分组名称');
     return;
   }
-  try {
-    await axios.post('/api/groups', { name: name });
-    location.reload();
-  } catch (error) {
-    alert('添加失败: ' + error.message);
-  }
+  axios.post('/api/groups', { name: name })
+    .then(function() {
+      location.reload();
+    })
+    .catch(function(error) {
+      alert('添加失败: ' + error.message);
+    });
 }
 
 // 删除分组
-async function deleteGroup(id) {
+function deleteGroup(id) {
   console.log('deleteGroup called with id:', id);
   if (!confirm('确定要删除该分组吗？')) return;
-  try {
-    await axios.delete('/api/groups', { params: { id: id } });
-    location.reload();
-  } catch (error) {
-    alert('删除失败: ' + error.message);
-  }
+  axios.delete('/api/groups', { params: { id: id } })
+    .then(function() {
+      location.reload();
+    })
+    .catch(function(error) {
+      alert('删除失败: ' + error.message);
+    });
 }
 
 // 添加服务器
-async function addServer() {
+function addServer() {
   console.log('addServer called');
-  const ip = document.getElementById('ip').value.trim();
-  const port = parseInt(document.getElementById('port').value || '22', 10);
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value;
-  const notes = document.getElementById('notes').value.trim();
+  var ip = document.getElementById('ip').value.trim();
+  var port = parseInt(document.getElementById('port').value || '22', 10);
+  var username = document.getElementById('username').value.trim();
+  var password = document.getElementById('password').value;
+  var notes = document.getElementById('notes').value.trim();
   
-  const groupCheckboxes = document.querySelectorAll('input[name="serverGroups"]:checked');
-  const group_ids = Array.from(groupCheckboxes).map(cb => parseInt(cb.value));
+  var groupCheckboxes = document.querySelectorAll('input[name="serverGroups"]:checked');
+  var group_ids = [];
+  for (var i = 0; i < groupCheckboxes.length; i++) {
+    group_ids.push(parseInt(groupCheckboxes[i].value));
+  }
   
   if (!ip || !username || !password) {
     alert('请填写 IP、用户名和密码');
     return;
   }
   
-  try {
-    await axios.post('/api/servers', { 
-      ip: ip, 
-      port: port, 
-      username: username, 
-      password: password, 
-      group_ids: group_ids, 
-      notes: notes 
+  axios.post('/api/servers', { 
+    ip: ip, 
+    port: port, 
+    username: username, 
+    password: password, 
+    group_ids: group_ids, 
+    notes: notes 
+  })
+    .then(function() {
+      location.reload();
+    })
+    .catch(function(error) {
+      alert('添加失败: ' + error.message);
     });
-    location.reload();
-  } catch (error) {
-    alert('添加失败: ' + error.message);
-  }
 }
 
 // 删除服务器
-async function deleteServer(id) {
+function deleteServer(id) {
   console.log('deleteServer called with id:', id);
   if (!confirm('确定要删除该服务器吗？')) return;
-  try {
-    await axios.delete('/api/servers', { params: { id: id } });
-    location.reload();
-  } catch (error) {
-    alert('删除失败: ' + error.message);
-  }
+  axios.delete('/api/servers', { params: { id: id } })
+    .then(function() {
+      location.reload();
+    })
+    .catch(function(error) {
+      alert('删除失败: ' + error.message);
+    });
 }
 
 // 执行巡检任务
-let currentRun = null;
-let pollInterval = null;
-let lastMessage = '';
+var currentRun = null;
+var pollInterval = null;
+var lastMessage = '';
 
 function runTask(taskId) {
-  const logBox = document.getElementById('logBox');
-  const progressBar = document.getElementById('progressBar');
-  const progressPercent = document.getElementById('progressPercent');
-  const downloadBox = document.getElementById('downloadBox');
+  var logBox = document.getElementById('logBox');
+  var progressBar = document.getElementById('progressBar');
+  var progressPercent = document.getElementById('progressPercent');
+  var downloadBox = document.getElementById('downloadBox');
   
   if (logBox) logBox.textContent = '';
   if (progressBar) progressBar.style.width = '0%';
@@ -457,7 +470,7 @@ function runTask(taskId) {
     })
     .catch(function(error) {
       console.error('Run task error:', error);
-      const errorMsg = error.response?.data?.msg || error.response?.statusText || error.message || '网络错误';
+      var errorMsg = error.response && error.response.data && error.response.data.msg ? error.response.data.msg : (error.response && error.response.statusText ? error.response.statusText : (error.message ? error.message : '网络错误'));
       log('错误：' + errorMsg);
     });
 }
@@ -467,7 +480,7 @@ function pollTaskProgress() {
   
   axios.get('/api/inspection_progress', { params: { run_id: currentRun } })
     .then(function(resp) {
-      const data = resp.data;
+      var data = resp.data;
       if (data.message && data.message !== lastMessage) {
         log(data.message);
         lastMessage = data.message;
@@ -477,7 +490,7 @@ function pollTaskProgress() {
         document.getElementById('progressPercent').textContent = data.percent + '%';
       }
       if (data.report_path) {
-        const box = document.getElementById('downloadBox');
+        var box = document.getElementById('downloadBox');
         box.innerHTML = '<a href="/api/download_report?path=' + encodeURIComponent(data.report_path) + '" class="btn btn-primary">下载巡检报告</a>';
         if (pollInterval) {
           clearInterval(pollInterval);
@@ -491,117 +504,128 @@ function pollTaskProgress() {
 }
 
 // 删除巡检任务
-async function deleteTask(taskId) {
+function deleteTask(taskId) {
   if (!confirm('确定要删除该任务吗？')) return;
   
-  try {
-    const resp = await axios.post('/api/delete_task', { task_id: taskId });
-    if (resp.data.ok) {
-      alert('任务删除成功！');
-      location.reload();
-    } else {
-      alert('删除失败: ' + resp.data.msg);
-    }
-  } catch (error) {
-    alert('删除失败: ' + (error.response?.data?.msg || error.message));
-  }
+  axios.post('/api/delete_task', { task_id: taskId })
+    .then(function(resp) {
+      if (resp.data.ok) {
+        alert('任务删除成功！');
+        location.reload();
+      } else {
+        alert('删除失败: ' + resp.data.msg);
+      }
+    })
+    .catch(function(error) {
+      var errorMsg = error.response && error.response.data && error.response.data.msg ? error.response.data.msg : error.message;
+      alert('删除失败: ' + errorMsg);
+    });
 }
 
 // 加载服务器列表
-async function loadServers() {
+function loadServers() {
   console.log('loadServers called');
-  const gid = document.getElementById('filterGroup').value;
-  try {
-    const resp = await axios.get('/api/servers', { params: { group_id: gid || null } });
-    const servers = resp.data;
-    const tbody = document.getElementById('serverTbody');
-    if (tbody) {
-      tbody.innerHTML = servers.map(function(s) {
-        return '<tr>' +
-          '<td style="font-weight: 500;">' + s.ip + '</td>' +
-          '<td>' + s.port + '</td>' +
-          '<td>' + s.username + '</td>' +
-          '<td>' + (s.group_name ? '<span style="background: #f0f0f5; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8125rem;">' + s.group_name + '</span>' : '<span style="color: #86868b;">-</span>') + '</td>' +
-          '<td style="color: #86868b;">' + (s.notes || '-') + '</td>' +
-          '<td><button class="btn btn-sm btn-outline" onclick="deleteServer(' + s.id + ')" style="color: #ff3b30; border-color: #ff3b30;">删除</button></td>' +
-          '</tr>';
-      }).join('');
-    }
-  } catch (error) {
-    console.error('加载服务器失败：', error);
-  }
+  var gid = document.getElementById('filterGroup').value;
+  axios.get('/api/servers', { params: { group_id: gid || null } })
+    .then(function(resp) {
+      var servers = resp.data;
+      var tbody = document.getElementById('serverTbody');
+      if (tbody) {
+        var html = '';
+        for (var i = 0; i < servers.length; i++) {
+          var s = servers[i];
+          var groupName = s.group_name ? '<span style="background: #f0f0f5; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8125rem;">' + s.group_name + '</span>' : '<span style="color: #86868b;">-</span>';
+          var notes = s.notes || '-';
+          html += '<tr>' +
+            '<td style="font-weight: 500;">' + s.ip + '</td>' +
+            '<td>' + s.port + '</td>' +
+            '<td>' + s.username + '</td>' +
+            '<td>' + groupName + '</td>' +
+            '<td style="color: #86868b;">' + notes + '</td>' +
+            '<td><button class="btn btn-sm btn-outline" onclick="deleteServer(' + s.id + ')" style="color: #ff3b30; border-color: #ff3b30;">删除</button></td>' +
+            '</tr>';
+        }
+        tbody.innerHTML = html;
+      }
+    })
+    .catch(function(error) {
+      console.error('加载服务器失败：', error);
+    });
 }
 
 // 切换定时任务状态
-async function toggleSchedule(taskId) {
+function toggleSchedule(taskId) {
   console.log('toggleSchedule called with id:', taskId);
-  try {
-    const resp = await axios.post('/api/toggle_schedule', { id: taskId });
-    if (resp.data.ok) {
-      location.reload();
-    } else {
-      alert('操作失败: ' + resp.data.msg);
-    }
-  } catch (error) {
-    alert('操作失败: ' + (error.response?.data?.msg || error.message));
-  }
+  axios.post('/api/toggle_schedule', { id: taskId })
+    .then(function(resp) {
+      if (resp.data.ok) {
+        location.reload();
+      } else {
+        alert('操作失败: ' + resp.data.msg);
+      }
+    })
+    .catch(function(error) {
+      var errorMsg = error.response && error.response.data && error.response.data.msg ? error.response.data.msg : error.message;
+      alert('操作失败: ' + errorMsg);
+    });
 }
 
-let currentEditTaskId = null;
+var currentEditTaskId = null;
 
 // 加载任务详情
-async function loadTask(taskId) {
+function loadTask(taskId) {
   console.log('loadTask called with id:', taskId);
-  try {
-    const resp = await axios.get('/api/task', { params: { id: taskId } });
-    const task = resp.data;
-    currentEditTaskId = taskId;
-    
-    document.getElementById('editTaskName').value = task.name || '';
-    document.getElementById('editProjectName').value = task.project_name || '';
-    document.getElementById('editInspector').value = task.inspector || '';
-    
-    if (task.report_format === 'pdf') {
-      document.getElementById('editFormatPdf').checked = true;
-    } else {
-      document.getElementById('editFormatExcel').checked = true;
-    }
-    
-    document.getElementById('editResourceGroup').value = task.resource_group_id || '';
-    document.getElementById('editCheckCpu').checked = task.check_cpu || false;
-    document.getElementById('editCheckMem').checked = task.check_mem || false;
-    document.getElementById('editCheckDisk').checked = task.check_disk || false;
-    
-    document.getElementById('editEnableProxy').checked = task.enable_proxy || false;
-    const editProxyConfig = document.getElementById('editProxyConfig');
-    editProxyConfig.style.display = task.enable_proxy ? 'block' : 'none';
-    
-    const editProxyRulesList = document.getElementById('editProxyRulesList');
-    editProxyRulesList.innerHTML = '';
-    if (task.proxy_rules && task.proxy_rules.length > 0) {
-      task.proxy_rules.forEach((rule, index) => {
-        addEditProxyRule(rule, index);
-      });
-    }
-    
-    document.getElementById('editEnableSchedule').checked = task.enable_schedule || false;
-    const editScheduleConfig = document.getElementById('editScheduleConfig');
-    editScheduleConfig.style.display = task.enable_schedule ? 'block' : 'none';
-    document.getElementById('editScheduleTime').value = task.schedule_time || '';
-    
-    document.getElementById('taskEditSection').style.display = 'block';
-    
-  } catch (error) {
-    alert('加载任务失败: ' + (error.response?.data?.msg || error.message));
-  }
+  axios.get('/api/task', { params: { id: taskId } })
+    .then(function(resp) {
+      var task = resp.data;
+      currentEditTaskId = taskId;
+      
+      document.getElementById('editTaskName').value = task.name || '';
+      document.getElementById('editProjectName').value = task.project_name || '';
+      document.getElementById('editInspector').value = task.inspector || '';
+      
+      if (task.report_format === 'pdf') {
+        document.getElementById('editFormatPdf').checked = true;
+      } else {
+        document.getElementById('editFormatExcel').checked = true;
+      }
+      
+      document.getElementById('editResourceGroup').value = task.resource_group_id || '';
+      document.getElementById('editCheckCpu').checked = task.check_cpu || false;
+      document.getElementById('editCheckMem').checked = task.check_mem || false;
+      document.getElementById('editCheckDisk').checked = task.check_disk || false;
+      
+      document.getElementById('editEnableProxy').checked = task.enable_proxy || false;
+      var editProxyConfig = document.getElementById('editProxyConfig');
+      editProxyConfig.style.display = task.enable_proxy ? 'block' : 'none';
+      
+      var editProxyRulesList = document.getElementById('editProxyRulesList');
+      editProxyRulesList.innerHTML = '';
+      if (task.proxy_rules && task.proxy_rules.length > 0) {
+        for (var i = 0; i < task.proxy_rules.length; i++) {
+          addEditProxyRule(task.proxy_rules[i], i);
+        }
+      }
+      
+      document.getElementById('editEnableSchedule').checked = task.enable_schedule || false;
+      var editScheduleConfig = document.getElementById('editScheduleConfig');
+      editScheduleConfig.style.display = task.enable_schedule ? 'block' : 'none';
+      document.getElementById('editScheduleTime').value = task.schedule_time || '';
+      
+      document.getElementById('taskEditSection').style.display = 'block';
+    })
+    .catch(function(error) {
+      var errorMsg = error.response && error.response.data && error.response.data.msg ? error.response.data.msg : error.message;
+      alert('加载任务失败: ' + errorMsg);
+    });
 }
 
-function addEditProxyRule(rule = null, index = null) {
-  const editProxyRulesList = document.getElementById('editProxyRulesList');
-  const newIndex = index !== null ? index : editProxyRulesList.querySelectorAll('.inspect-proxy-rule-row').length;
+function addEditProxyRule(rule, index) {
+  var editProxyRulesList = document.getElementById('editProxyRulesList');
+  var newIndex = index !== null ? index : editProxyRulesList.querySelectorAll('.inspect-proxy-rule-row').length;
   
-  let groups = [];
-  const groupsData = document.getElementById('groupsData');
+  var groups = [];
+  var groupsData = document.getElementById('groupsData');
   if (groupsData) {
     try {
       groups = JSON.parse(groupsData.textContent);
@@ -610,93 +634,98 @@ function addEditProxyRule(rule = null, index = null) {
     }
   }
   
-  let groupOptions = '<option value="">全部</option>';
-  groups.forEach(g => {
-    const selected = rule && rule.group_id == g.id ? 'selected' : '';
-    groupOptions += `<option value="${g.id}" ${selected}>${g.name}</option>`;
-  });
+  var groupOptions = '<option value="">全部</option>';
+  for (var i = 0; i < groups.length; i++) {
+    var g = groups[i];
+    var selected = rule && rule.group_id == g.id ? 'selected' : '';
+    groupOptions += '<option value="' + g.id + '" ' + selected + '>' + g.name + '</option>';
+  }
   
-  const ruleDiv = document.createElement('div');
+  var ruleDiv = document.createElement('div');
   ruleDiv.className = 'inspect-proxy-rule-row';
   ruleDiv.dataset.index = newIndex;
   
-  ruleDiv.innerHTML = `
-    <div class="inspect-proxy-rule-item">
-      <label class="inspect-proxy-label">服务器</label>
-      <select class="inspect-proxy-select proxy-group-select">
-        ${groupOptions}
-      </select>
-    </div>
-    <div class="inspect-proxy-rule-item inspect-proxy-rule-item-large">
-      <label class="inspect-proxy-label">CURL命令</label>
-      <input type="text" class="inspect-proxy-input proxy-curl-command" value="${rule ? rule.curl_command : ''}" placeholder="curl -s http://127.0.0.1:8080/api/health">
-    </div>
-    <div class="inspect-proxy-rule-item">
-      <label class="inspect-proxy-label">关键词</label>
-      <input type="text" class="inspect-proxy-input-short proxy-success-keyword" value="${rule ? rule.success_keyword : '成功'}" placeholder="成功">
-    </div>
-    <button type="button" class="inspect-btn inspect-btn-delete remove-proxy-rule" style="display: inline-flex;">删除</button>
-  `;
+  var curlValue = rule ? rule.curl_command : '';
+  var keywordValue = rule ? rule.success_keyword : '成功';
+  
+  ruleDiv.innerHTML = [
+    '<div class="inspect-proxy-rule-item">',
+    '<label class="inspect-proxy-label">服务器</label>',
+    '<select class="inspect-proxy-select proxy-group-select">',
+    groupOptions,
+    '</select>',
+    '</div>',
+    '<div class="inspect-proxy-rule-item inspect-proxy-rule-item-large">',
+    '<label class="inspect-proxy-label">CURL命令</label>',
+    '<input type="text" class="inspect-proxy-input proxy-curl-command" value="' + curlValue + '" placeholder="curl -s http://127.0.0.1:8080/api/health">',
+    '</div>',
+    '<div class="inspect-proxy-rule-item">',
+    '<label class="inspect-proxy-label">关键词</label>',
+    '<input type="text" class="inspect-proxy-input-short proxy-success-keyword" value="' + keywordValue + '" placeholder="成功">',
+    '</div>',
+    '<button type="button" class="inspect-btn inspect-btn-delete remove-proxy-rule" style="display: inline-flex;">删除</button>'
+  ].join('');
   
   editProxyRulesList.appendChild(ruleDiv);
   
-  const removeBtn = ruleDiv.querySelector('.remove-proxy-rule');
+  var removeBtn = ruleDiv.querySelector('.remove-proxy-rule');
   removeBtn.addEventListener('click', function() {
     ruleDiv.remove();
   });
 }
 
 function initTaskEdit() {
-  const editEnableProxy = document.getElementById('editEnableProxy');
+  var editEnableProxy = document.getElementById('editEnableProxy');
   if (editEnableProxy) {
     editEnableProxy.addEventListener('change', function() {
-      const config = document.getElementById('editProxyConfig');
+      var config = document.getElementById('editProxyConfig');
       config.style.display = this.checked ? 'block' : 'none';
     });
   }
   
-  const editEnableSchedule = document.getElementById('editEnableSchedule');
+  var editEnableSchedule = document.getElementById('editEnableSchedule');
   if (editEnableSchedule) {
     editEnableSchedule.addEventListener('change', function() {
-      const config = document.getElementById('editScheduleConfig');
+      var config = document.getElementById('editScheduleConfig');
       config.style.display = this.checked ? 'block' : 'none';
     });
   }
   
-  const editAddProxyRule = document.getElementById('editAddProxyRule');
+  var editAddProxyRule = document.getElementById('editAddProxyRule');
   if (editAddProxyRule) {
     editAddProxyRule.addEventListener('click', function() {
-      addEditProxyRule();
+      addEditProxyRule(null, null);
     });
   }
   
-  const btnSaveEdit = document.getElementById('btnSaveEdit');
+  var btnSaveEdit = document.getElementById('btnSaveEdit');
   if (btnSaveEdit) {
-    btnSaveEdit.addEventListener('click', async function() {
+    btnSaveEdit.addEventListener('click', function() {
       if (!currentEditTaskId) {
         alert('请先选择要编辑的任务');
         return;
       }
       
-      const taskName = document.getElementById('editTaskName').value.trim();
-      const projectName = document.getElementById('editProjectName').value.trim();
-      const inspector = document.getElementById('editInspector').value.trim();
-      const formatRadio = document.querySelector('input[name="editReportFormat"]:checked');
-      const format = formatRadio ? formatRadio.value : 'excel';
+      var taskName = document.getElementById('editTaskName').value.trim();
+      var projectName = document.getElementById('editProjectName').value.trim();
+      var inspector = document.getElementById('editInspector').value.trim();
+      var formatRadio = document.querySelector('input[name="editReportFormat"]:checked');
+      var format = formatRadio ? formatRadio.value : 'excel';
       
-      const resourceGroup = document.getElementById('editResourceGroup').value;
-      const checkCpu = document.getElementById('editCheckCpu').checked;
-      const checkMem = document.getElementById('editCheckMem').checked;
-      const checkDisk = document.getElementById('editCheckDisk').checked;
+      var resourceGroup = document.getElementById('editResourceGroup').value;
+      var checkCpu = document.getElementById('editCheckCpu').checked;
+      var checkMem = document.getElementById('editCheckMem').checked;
+      var checkDisk = document.getElementById('editCheckDisk').checked;
       
-      const enableProxy = document.getElementById('editEnableProxy').checked;
-      const proxyRules = [];
+      var enableProxy = document.getElementById('editEnableProxy').checked;
+      var proxyRules = [];
       if (enableProxy) {
-        const ruleElements = document.querySelectorAll('#editProxyRulesList .inspect-proxy-rule-row');
-        ruleElements.forEach((rule) => {
-          const groupId = rule.querySelector('.proxy-group-select').value;
-          const curlCmd = rule.querySelector('.proxy-curl-command').value.trim();
-          const keyword = rule.querySelector('.proxy-success-keyword').value.trim() || '成功';
+        var ruleElements = document.querySelectorAll('#editProxyRulesList .inspect-proxy-rule-row');
+        for (var i = 0; i < ruleElements.length; i++) {
+          var rule = ruleElements[i];
+          var groupId = rule.querySelector('.proxy-group-select').value;
+          var curlCmd = rule.querySelector('.proxy-curl-command').value.trim();
+          var keyword = rule.querySelector('.proxy-success-keyword').value.trim() || '成功';
           if (curlCmd) {
             proxyRules.push({
               group_id: groupId,
@@ -704,11 +733,11 @@ function initTaskEdit() {
               success_keyword: keyword
             });
           }
-        });
+        }
       }
       
-      const enableSchedule = document.getElementById('editEnableSchedule').checked;
-      const scheduleTime = enableSchedule ? document.getElementById('editScheduleTime').value : '';
+      var enableSchedule = document.getElementById('editEnableSchedule').checked;
+      var scheduleTime = enableSchedule ? document.getElementById('editScheduleTime').value : '';
       
       if (!taskName) {
         alert('请输入任务名称');
@@ -723,24 +752,22 @@ function initTaskEdit() {
         return;
       }
       
-      try {
-        console.log('Sending update request with id:', currentEditTaskId);
-        const resp = await axios.post('/api/update_task', {
-          id: currentEditTaskId,
-          task_name: taskName,
-          project_name: projectName,
-          inspector: inspector,
-          report_format: format,
-          resource_group_id: resourceGroup,
-          check_cpu: checkCpu,
-          check_mem: checkMem,
-          check_disk: checkDisk,
-          enable_proxy: enableProxy,
-          proxy_rules: proxyRules,
-          enable_schedule: enableSchedule,
-          schedule_time: scheduleTime
-        });
-        
+      axios.post('/api/update_task', {
+        id: currentEditTaskId,
+        task_name: taskName,
+        project_name: projectName,
+        inspector: inspector,
+        report_format: format,
+        resource_group_id: resourceGroup,
+        check_cpu: checkCpu,
+        check_mem: checkMem,
+        check_disk: checkDisk,
+        enable_proxy: enableProxy,
+        proxy_rules: proxyRules,
+        enable_schedule: enableSchedule,
+        schedule_time: scheduleTime
+      })
+      .then(function(resp) {
         console.log('Response received:', resp.data);
         if (resp.data.ok) {
           alert('任务修改成功！');
@@ -748,15 +775,16 @@ function initTaskEdit() {
         } else {
           alert('修改失败: ' + (resp.data.msg || '未知错误'));
         }
-      } catch (error) {
+      })
+      .catch(function(error) {
         console.error('Error:', error);
-        const errorMsg = error.response?.data?.msg || error.response?.statusText || error.message || '网络错误';
+        var errorMsg = error.response && error.response.data && error.response.data.msg ? error.response.data.msg : (error.response && error.response.statusText ? error.response.statusText : (error.message ? error.message : '网络错误'));
         alert('修改失败: ' + errorMsg);
-      }
+      });
     });
   }
   
-  const btnCancelEdit = document.getElementById('btnCancelEdit');
+  var btnCancelEdit = document.getElementById('btnCancelEdit');
   if (btnCancelEdit) {
     btnCancelEdit.addEventListener('click', function() {
       document.getElementById('taskEditSection').style.display = 'none';

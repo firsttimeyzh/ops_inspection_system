@@ -42,13 +42,14 @@
 </div>
 
 <script>
-async function handleLogout() {
-  try {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login';
-  } catch (error) {
-    window.location.href = '/login';
-  }
+function handleLogout() {
+  fetch('/api/logout', { method: 'POST' })
+    .then(function() {
+      window.location.href = '/login';
+    })
+    .catch(function() {
+      window.location.href = '/login';
+    });
 }
 </script>
 {% endblock %}

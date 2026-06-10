@@ -76,15 +76,15 @@
     }
     
     document.addEventListener('DOMContentLoaded', function() {
-      const dropdown = document.querySelector('.menu-dropdown');
+      var dropdown = document.querySelector('.menu-dropdown');
       if (dropdown && localStorage.getItem('menuExpanded') === 'true') {
         dropdown.classList.add('expanded');
       }
     });
     
     function toggleDropdown(button, event) {
-      const dropdown = button.parentElement;
-      const isExpanded = dropdown.classList.contains('expanded');
+      var dropdown = button.parentElement;
+      var isExpanded = dropdown.classList.contains('expanded');
       if (!isExpanded) {
         dropdown.classList.add('expanded');
         localStorage.setItem('menuExpanded', 'true');

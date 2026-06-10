@@ -309,32 +309,32 @@
 
   <script>
     function refreshCaptcha() {
-      const img = document.getElementById('captcha-img');
+      var img = document.getElementById('captcha-img');
       img.src = '/api/captcha?' + Date.now();
       document.getElementById('captcha').value = '';
     }
     
-    document.getElementById('login-form').addEventListener('submit', async function(e) {
+    document.getElementById('login-form').addEventListener('submit', function(e) {
       e.preventDefault();
       
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const captcha = document.getElementById('captcha').value;
-      const errorDiv = document.getElementById('error-message');
+      var username = document.getElementById('username').value;
+      var password = document.getElementById('password').value;
+      var captcha = document.getElementById('captcha').value;
+      var errorDiv = document.getElementById('error-message');
       
       errorDiv.classList.remove('show');
       
-      try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password, captcha })
-        });
-        
-        const result = await response.json();
-        
+      fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: username, password: password, captcha: captcha })
+      })
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(result) {
         if (result.success) {
           window.location.href = '/';
         } else {
@@ -342,10 +342,11 @@
           errorDiv.classList.add('show');
           refreshCaptcha();
         }
-      } catch (error) {
+      })
+      .catch(function(error) {
         errorDiv.textContent = '网络错误，请稍后重试';
         errorDiv.classList.add('show');
-      }
+      });
     });
   </script>
 </body>
