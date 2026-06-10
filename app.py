@@ -28,7 +28,6 @@ logger = logging.getLogger("ops-app")
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['JSON_AS_ASCII'] = False
-app.config['SESSION_TYPE'] = 'filesystem'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # 角色定义
@@ -377,6 +376,8 @@ def api_groups():
         return jsonify({"ok": True})
 
 @app.route("/api/servers", methods=["GET", "POST", "DELETE"])
+@login_required
+@role_required(['admin', 'operator'])
 def api_servers():
     if request.method == "GET":
         gid = request.args.get("group_id")

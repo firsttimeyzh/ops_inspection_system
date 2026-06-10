@@ -188,12 +188,12 @@ function addGroup() {
   })
   .then(response => response.json())
   .then(data => {
-    if (data.success) {
+    if (data.ok) {
       alert('分组添加成功');
       document.getElementById('groupName').value = '';
       location.reload();
     } else {
-      alert('添加失败: ' + (data.message || '未知错误'));
+      alert('添加失败: ' + (data.msg || '未知错误'));
     }
   })
   .catch(error => {
@@ -207,7 +207,7 @@ function deleteGroup(groupId) {
     return;
   }
   
-  fetch('/api/groups/' + groupId, {
+  fetch('/api/groups?id=' + groupId, {
     method: 'DELETE',
     headers: {
       'X-CSRFToken': getCookie('csrf_token')
@@ -216,11 +216,11 @@ function deleteGroup(groupId) {
   })
   .then(response => response.json())
   .then(data => {
-    if (data.success) {
+    if (data.ok) {
       alert('删除成功');
       location.reload();
     } else {
-      alert('删除失败: ' + (data.message || '未知错误'));
+      alert('删除失败: ' + (data.msg || '未知错误'));
     }
   })
   .catch(error => {
@@ -276,7 +276,7 @@ function addServer() {
   })
   .then(response => response.json())
   .then(data => {
-    if (data.success) {
+    if (data.ok) {
       alert('服务器添加成功');
       document.getElementById('ip').value = '';
       document.getElementById('port').value = '22';
@@ -286,7 +286,7 @@ function addServer() {
       document.querySelectorAll('input[name="serverGroups"]').forEach(cb => cb.checked = false);
       location.reload();
     } else {
-      alert('添加失败: ' + (data.message || '未知错误'));
+      alert('添加失败: ' + (data.msg || '未知错误'));
     }
   })
   .catch(error => {
@@ -300,7 +300,7 @@ function deleteServer(serverId) {
     return;
   }
   
-  fetch('/api/servers/' + serverId, {
+  fetch('/api/servers?id=' + serverId, {
     method: 'DELETE',
     headers: {
       'X-CSRFToken': getCookie('csrf_token')
@@ -309,11 +309,11 @@ function deleteServer(serverId) {
   })
   .then(response => response.json())
   .then(data => {
-    if (data.success) {
+    if (data.ok) {
       alert('删除成功');
       location.reload();
     } else {
-      alert('删除失败: ' + (data.message || '未知错误'));
+      alert('删除失败: ' + (data.msg || '未知错误'));
     }
   })
   .catch(error => {
