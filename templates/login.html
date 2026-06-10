@@ -219,17 +219,22 @@
       align-items: center;
     }
     
+    @supports not (gap: 10px) {
+      .captcha-row > * + * { margin-left: 10px; }
+    }
+    
     .captcha-row input {
       flex: 1;
       width: auto;
     }
     
     .captcha-image {
-      width: 130px;
-      height: 45px;
+      width: 150px;
+      height: 60px;
       border-radius: 8px;
       cursor: pointer;
       border: 1px solid var(--border-color);
+      object-fit: contain;
       transition: all 0.2s;
       background: #f5f5f5;
     }

@@ -9,6 +9,77 @@ function showSidebar() {
   sidebar.classList.remove('collapsed');
 }
 
+// 初始化selected类 - 兼容低版本浏览器
+function initSelectedStates() {
+  // 初始化format-option的selected状态
+  var formatOptions = document.querySelectorAll('.format-option');
+  for (var i = 0; i < formatOptions.length; i++) {
+    var radio = formatOptions[i].querySelector('input[type="radio"]');
+    if (radio && radio.checked) {
+      formatOptions[i].classList.add('selected');
+    }
+  }
+  
+  // 初始化inspect-format-option的selected状态
+  var inspectFormatOptions = document.querySelectorAll('.inspect-format-option');
+  for (var j = 0; j < inspectFormatOptions.length; j++) {
+    var radio = inspectFormatOptions[j].querySelector('input[type="radio"]');
+    if (radio && radio.checked) {
+      inspectFormatOptions[j].classList.add('selected');
+    }
+  }
+  
+  // 初始化inspect-checkbox-item的selected状态
+  var checkboxItems = document.querySelectorAll('.inspect-checkbox-item');
+  for (var k = 0; k < checkboxItems.length; k++) {
+    var checkbox = checkboxItems[k].querySelector('input[type="checkbox"]');
+    if (checkbox && checkbox.checked) {
+      checkboxItems[k].classList.add('selected');
+    }
+  }
+}
+
+// 监听radio和checkbox变化更新selected类
+function initSelectionListeners() {
+  // 监听所有radio按钮
+  var radios = document.querySelectorAll('input[type="radio"]');
+  for (var i = 0; i < radios.length; i++) {
+    radios[i].addEventListener('change', function() {
+      var name = this.name;
+      var container = this.closest('.format-option, .inspect-format-option');
+      
+      // 移除同组其他项的selected类
+      var siblings = document.querySelectorAll('input[name="' + name + '"]');
+      for (var j = 0; j < siblings.length; j++) {
+        var siblingContainer = siblings[j].closest('.format-option, .inspect-format-option');
+        if (siblingContainer) {
+          siblingContainer.classList.remove('selected');
+        }
+      }
+      
+      // 添加当前项的selected类
+      if (container) {
+        container.classList.add('selected');
+      }
+    });
+  }
+  
+  // 监听所有checkbox按钮
+  var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+  for (var k = 0; k < checkboxes.length; k++) {
+    checkboxes[k].addEventListener('change', function() {
+      var container = this.closest('.inspect-checkbox-item');
+      if (container) {
+        if (this.checked) {
+          container.classList.add('selected');
+        } else {
+          container.classList.remove('selected');
+        }
+      }
+    });
+  }
+}
+
 // 全局辅助函数
 function log(msg) {
   var el = document.getElementById('logBox');
@@ -32,6 +103,10 @@ function setProgress(v) {
 // 文档加载完成后执行
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM loaded - app.js initialized');
+  
+  // 初始化selected状态 - 兼容低版本浏览器
+  initSelectedStates();
+  initSelectionListeners();
   
   // 网关代理检测启用/禁用切换
   var enableProxyCheck = document.getElementById('enableProxyCheck');
