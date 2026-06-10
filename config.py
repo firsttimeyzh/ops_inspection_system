@@ -10,6 +10,7 @@ HOST = os.environ.get("OPS_HOST", "0.0.0.0")
 PORT = int(os.environ.get("OPS_PORT", "1999"))
 DEBUG = os.environ.get("OPS_DEBUG", "1") == "1"
 SECRET_KEY = os.environ.get("OPS_SECRET_KEY", "change-me")
+DEFAULT_ADMIN_PASSWORD = os.environ.get("OPS_ADMIN_PASSWORD", "Admin@123")  # 默认admin密码，可通过环境变量覆盖
 
 # ---------------------- Paths -----------------------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))

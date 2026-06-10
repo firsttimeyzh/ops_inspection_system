@@ -26,17 +26,52 @@ def find_chinese_font():
         'C:/Windows/Fonts/simhei.ttf',
         'C:/Windows/Fonts/msyh.ttf',
         'C:/Windows/Fonts/msyhbd.ttf',
+        'C:/Windows/Fonts/simkai.ttf',
         # macOS 常见字体路径
         '/Library/Fonts/Songti.ttc',
         '/Library/Fonts/Heiti.ttc',
-        # Linux 常见字体路径
-        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+        '/Library/Fonts/Hiragino Sans GB.ttc',
+        # Linux wqy-zenhei 可能的路径
         '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+        '/usr/share/fonts/opentype/wqy/wqy-zenhei.ttc',
+        '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
+        '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/truetype/noto/NotoSerifCJK-Regular.ttc',
+        # 扫描常见字体目录
+        '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        # Docker 环境中 fonts-wqy-zenhei 的安装路径
+        '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-zenhei/wqy-zenhei.ttc',
     ]
-    
+
     for path in font_paths:
         if os.path.exists(path):
             return path
+    
+    # 尝试使用 fc-list 命令查找字体
+    try:
+        import subprocess
+        result = subprocess.run(['fc-list', '--format=%{file}\n'], 
+                                capture_output=True, text=True)
+        for line in result.stdout.split('\n'):
+            line = line.strip()
+            if line:
+                # 优先查找中文字体
+                if ('wqy' in line.lower() or 'zenhei' in line.lower() or 
+                    'songti' in line.lower() or 'heiti' in line.lower() or
+                    'noto' in line.lower() or 'cjk' in line.lower()):
+                    if os.path.exists(line):
+                        return line
+                # 查找通用字体作为备选
+                elif ('dejavu' in line.lower() or 'freefont' in line.lower()):
+                    if os.path.exists(line):
+                        return line
+    except Exception:
+        pass
+    
     return None
 
 def generate_pdf_report(project_name: str, inspector: str, date_str: str, rows: List[Dict[str, Any]], proxy_results: List[Dict[str, Any]] = None, check_cpu: bool = True, check_mem: bool = True, check_disk: bool = True) -> str:
@@ -51,7 +86,11 @@ def generate_pdf_report(project_name: str, inspector: str, date_str: str, rows: 
         font_name = 'ChineseFont'
         font_bold_name = 'ChineseFont-Bold'
         try:
-            pdfmetrics.registerFont(TTFont(font_name, font_path))
+            # .ttc 是字体集合，需要指定 subfontIndex
+            if font_path.lower().endswith('.ttc'):
+                pdfmetrics.registerFont(TTFont(font_name, font_path, subfontIndex=0))
+            else:
+                pdfmetrics.registerFont(TTFont(font_name, font_path))
             # 尝试注册粗体版本
             if 'msyh' in font_path.lower():
                 # 微软雅黑有单独的粗体文件

@@ -43,6 +43,16 @@ CREATE TABLE IF NOT EXISTS inspection_tasks (
     last_run TEXT,
     created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    display_name TEXT,
+    password TEXT NOT NULL,
+    contact TEXT,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    created_at TEXT NOT NULL,
+    is_default INTEGER DEFAULT 0
+);
 """
 
 def get_conn():
@@ -393,6 +403,116 @@ def delete_inspection_task(task_id: int):
     cur.execute("DELETE FROM inspection_tasks WHERE id = ?", (task_id,))
     conn.commit()
     conn.close()
+
+
+# 用户管理相关操作
+def add_user(username: str, password: str, display_name: str = None, contact: str = None, role: str = 'viewer', is_default: int = 0):
+    """添加用户"""
+    conn = get_conn()
+    cur = conn.cursor()
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    try:
+        cur.execute("""
+            INSERT INTO users(username, display_name, password, contact, role, created_at, is_default)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (username, display_name, password, contact, role, created_at, is_default))
+        conn.commit()
+        user_id = cur.lastrowid
+        conn.close()
+        return user_id
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None  # 用户名已存在
+
+def get_user(username: str):
+    """根据用户名获取用户"""
+    conn = get_conn()
+    conn.row_factory = row_to_dict
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE username = ?", (username,))
+    user = cur.fetchone()
+    conn.close()
+    return user
+
+def get_user_by_id(user_id: int):
+    """根据ID获取用户"""
+    conn = get_conn()
+    conn.row_factory = row_to_dict
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cur.fetchone()
+    conn.close()
+    return user
+
+def list_users():
+    """获取所有用户"""
+    conn = get_conn()
+    conn.row_factory = row_to_dict
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users ORDER BY created_at DESC")
+    users = cur.fetchall()
+    conn.close()
+    return users
+
+def delete_user(user_id: int):
+    """删除用户（不能删除默认admin）"""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT is_default FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    if row and row[0] == 1:
+        conn.close()
+        return False  # 不能删除默认用户
+    
+    cur.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    affected = cur.rowcount
+    conn.close()
+    return affected > 0
+
+def update_user(user_id: int, username: str = None, password: str = None, contact: str = None, role: str = None, display_name: str = None):
+    """更新用户信息"""
+    conn = get_conn()
+    cur = conn.cursor()
+    
+    updates = []
+    params = []
+    
+    if username:
+        updates.append("username = ?")
+        params.append(username)
+    if display_name is not None:
+        updates.append("display_name = ?")
+        params.append(display_name)
+    if password:
+        updates.append("password = ?")
+        params.append(password)
+    if contact is not None:
+        updates.append("contact = ?")
+        params.append(contact)
+    if role:
+        updates.append("role = ?")
+        params.append(role)
+    
+    if updates:
+        params.append(user_id)
+        cur.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", tuple(params))
+        conn.commit()
+    
+    conn.close()
+    return True
+
+def update_user_password(username: str, password: str):
+    """更新用户密码"""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET password = ? WHERE username = ?", (password, username))
+    conn.commit()
+    affected = cur.rowcount
+    conn.close()
+    return affected > 0
+
 
 if __name__ == "__main__":
     migrate_from_old_schema()

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-import os, logging, threading, time
+import os, logging, threading, time, hashlib
+import eventlet
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
+from functools import wraps
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, session, redirect, url_for, make_response
 from flask_socketio import SocketIO
-from config import HOST, PORT, DEBUG, SECRET_KEY, CPU_THRESHOLD, MEM_THRESHOLD, DISK_THRESHOLD, load_aes_key
-from models import init_db, list_groups, add_group, delete_group, list_servers, add_server, delete_server, add_inspection_task, list_inspection_tasks, get_inspection_task, update_inspection_task, delete_inspection_task, toggle_task_schedule, update_task_last_run, migrate_inspection_tasks_schema
+from config import HOST, PORT, DEBUG, SECRET_KEY, CPU_THRESHOLD, MEM_THRESHOLD, DISK_THRESHOLD, load_aes_key, DEFAULT_ADMIN_PASSWORD
+from models import init_db, list_groups, add_group, delete_group, list_servers, add_server, delete_server, add_inspection_task, list_inspection_tasks, get_inspection_task, update_inspection_task, delete_inspection_task, toggle_task_schedule, update_task_last_run, migrate_inspection_tasks_schema, add_user, get_user, list_users, delete_user, update_user
 from crypto_utils import aes_gcm_encrypt, aes_gcm_decrypt
 from inspection import inspect_server, test_proxy
 from report_excel import generate_excel_report
@@ -26,7 +28,93 @@ logger = logging.getLogger("ops-app")
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['JSON_AS_ASCII'] = False
+app.config['SESSION_TYPE'] = 'filesystem'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+# 角色定义
+ROLES = {
+    'admin': '超级管理员',
+    'operator': '系统操作员',
+    'viewer': '报告查看员'
+}
+
+class CurrentUser:
+    """当前用户上下文"""
+    def __init__(self):
+        self.username = '未登录'
+        self.display_name = None
+        self.role = 'viewer'
+        self.role_text = '报告查看员'
+        self.is_authenticated = False
+    
+    def from_session(self):
+        """从session加载用户信息"""
+        if 'username' in session and 'role' in session:
+            self.username = session['username']
+            self.role = session['role']
+            self.role_text = ROLES.get(self.role, self.role)
+            self.is_authenticated = True
+            
+            try:
+                user_info = get_user(self.username)
+                if user_info:
+                    self.display_name = user_info.get('display_name')
+            except Exception as e:
+                logger.error(f'获取用户信息失败: {str(e)}')
+        return self
+
+def hash_password(password):
+    """密码哈希"""
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+def init_default_admin():
+    """初始化默认管理员用户"""
+    admin_user = get_user('admin')
+    if not admin_user:
+        # 创建默认admin用户
+        hashed_pwd = hash_password(DEFAULT_ADMIN_PASSWORD)
+        add_user('admin', hashed_pwd, display_name='admin', role='admin', is_default=1)
+        logger.info("默认管理员用户已创建")
+
+def no_cache(f):
+    """禁止浏览器缓存装饰器"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        response = make_response(f(*args, **kwargs))
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    return decorated_function
+
+def login_required(f):
+    """登录装饰器"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def role_required(roles):
+    """角色权限装饰器"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'role' not in session:
+                return redirect(url_for('login_page'))
+            user_role = session['role']
+            if user_role not in roles:
+                return jsonify({'success': False, 'message': '权限不足'}), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@app.context_processor
+def inject_user():
+    """向模板注入当前用户信息"""
+    user = CurrentUser().from_session()
+    return {'current_user': user}
 
 # 全局变量存储巡检进度
 inspection_progress = {}
@@ -59,32 +147,215 @@ inspection_progress = load_progress()
 # init db
 init_db()
 migrate_inspection_tasks_schema()
+init_default_admin()
 
+# ---------------- Auth Routes ----------------
+@app.route("/login")
+def login_page():
+    if 'username' in session:
+        return redirect(url_for('index'))
+    return render_template("login.html")
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    
+    if not username or not password:
+        return jsonify({'success': False, 'message': '用户名和密码不能为空'})
+    
+    user = get_user(username)
+    if not user:
+        return jsonify({'success': False, 'message': '用户名或密码错误'})
+    
+    hashed_pwd = hash_password(password)
+    if user['password'] != hashed_pwd:
+        return jsonify({'success': False, 'message': '用户名或密码错误'})
+    
+    session['username'] = user['username']
+    session['role'] = user['role']
+    return jsonify({'success': True, 'message': '登录成功', 'role': user['role']})
+
+@app.route("/api/logout", methods=["POST"])
+def api_logout():
+    session.clear()
+    return jsonify({'success': True})
+
+@app.route("/api/update_password", methods=["POST"])
+@no_cache
+@login_required
+def api_update_password():
+    data = request.json
+    old_password = data.get('oldPassword', '').strip()
+    new_password = data.get('newPassword', '').strip()
+    
+    if not old_password or not new_password:
+        return jsonify({'success': False, 'message': '密码不能为空'})
+    
+    if not (any(c.islower() for c in new_password) and any(c.isupper() for c in new_password)):
+        return jsonify({'success': False, 'message': '密码必须包含大小写字母组合'})
+    
+    username = session.get('username')
+    user = get_user(username)
+    
+    if not user:
+        return jsonify({'success': False, 'message': '用户不存在'})
+    
+    hashed_old_pwd = hash_password(old_password)
+    if user['password'] != hashed_old_pwd:
+        return jsonify({'success': False, 'message': '原密码不正确'})
+    
+    hashed_new_pwd = hash_password(new_password)
+    from models import update_user_password
+    success = update_user_password(username, hashed_new_pwd)
+    
+    if success:
+        return jsonify({'success': True, 'message': '密码修改成功'})
+    else:
+        return jsonify({'success': False, 'message': '修改失败'})
+
+@app.route("/profile")
+@no_cache
+@login_required
+def profile_page():
+    return render_template("profile.html")
+
+@app.route("/users")
+@no_cache
+@login_required
+@role_required(['admin'])
+def users_page():
+    return render_template("users.html")
+
+# ---------------- User Management APIs ----------------
+@app.route("/api/users", methods=["GET", "POST"])
+@no_cache
+@login_required
+def api_users():
+    if request.method == "GET":
+        if session.get('role') != 'admin':
+            return jsonify([])
+        users = list_users()
+        # 移除密码字段
+        for user in users:
+            user.pop('password', None)
+        return jsonify(users)
+    
+    elif request.method == "POST":
+        if session.get('role') != 'admin':
+            return jsonify({'success': False, 'message': '权限不足'}), 403
+        
+        data = request.json
+        username = data.get('username', '').strip()
+        display_name = data.get('display_name', '').strip()
+        password = data.get('password', '').strip()
+        contact = data.get('contact', '').strip()
+        role = data.get('role', '').strip()
+        
+        if not username:
+            return jsonify({'success': False, 'message': '用户名称不能为空'})
+        if not password:
+            return jsonify({'success': False, 'message': '密码不能为空'})
+        if not role:
+            return jsonify({'success': False, 'message': '权限角色不能为空'})
+        
+        # 验证密码格式（必须包含大小写字母）
+        if not (any(c.islower() for c in password) and any(c.isupper() for c in password)):
+            return jsonify({'success': False, 'message': '密码必须包含大小写字母组合'})
+        
+        if role not in ROLES:
+            return jsonify({'success': False, 'message': '无效的权限角色'})
+        
+        hashed_pwd = hash_password(password)
+        try:
+            user_id = add_user(username, hashed_pwd, display_name, contact, role, 0)
+            
+            if user_id:
+                return jsonify({'success': True, 'message': '用户创建成功'})
+            else:
+                return jsonify({'success': False, 'message': '用户名已存在'})
+        except Exception as e:
+            logger.error(f'创建用户失败: {str(e)}')
+            return jsonify({'success': False, 'message': f'服务器错误: {str(e)}'}), 500
+
+@app.route("/api/users/<int:user_id>", methods=["PUT", "DELETE"])
+@no_cache
+@login_required
+@role_required(['admin'])
+def api_user_detail(user_id):
+    if request.method == "PUT":
+        data = request.json
+        username = data.get('username', '').strip()
+        display_name = data.get('display_name', '').strip()
+        password = data.get('password', '').strip()
+        contact = data.get('contact', '').strip()
+        role = data.get('role', '').strip()
+        
+        if not username:
+            return jsonify({'success': False, 'message': '用户名不能为空'})
+        
+        if not role:
+            return jsonify({'success': False, 'message': '角色不能为空'})
+        
+        if password and len(password) < 6:
+            return jsonify({'success': False, 'message': '密码至少需要6位'})
+        
+        try:
+            update_user(user_id, username, password if password else None, contact, role, display_name)
+            return jsonify({'success': True, 'message': '更新成功'})
+        except sqlite3.IntegrityError:
+            return jsonify({'success': False, 'message': '用户名已存在'})
+    
+    elif request.method == "DELETE":
+        success = delete_user(user_id)
+        if success:
+            return jsonify({'success': True, 'message': '删除成功'})
+        else:
+            return jsonify({'success': False, 'message': '无法删除系统默认用户或用户不存在'})
+
+# ---------------- Page Routes ----------------
 @app.route("/")
+@no_cache
+@login_required
 def index():
     return render_template("index.html")
 
 @app.route("/inspect")
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def inspect_page():
     groups = list_groups()
     return render_template("inspect.html", groups=groups, cpu=CPU_THRESHOLD, mem=MEM_THRESHOLD, disk=DISK_THRESHOLD)
 
 @app.route("/server_inspect")
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def server_inspect_page():
     tasks = list_inspection_tasks()
     return render_template("server_inspect.html", tasks=tasks)
 
 @app.route("/servers")
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def servers_page():
     groups = list_groups()
     servers = list_servers()
     return render_template("servers.html", groups=groups, servers=servers)
 
 @app.route("/test_button")
+@no_cache
+@login_required
+@role_required(['admin', 'operator'])
 def test_button():
     return render_template("test_button.html")
 
 @app.route("/reports")
+@no_cache
+@login_required
 def reports_page():
     return render_template("reports.html")
 
@@ -657,21 +928,42 @@ def run_scheduled_tasks():
                     if schedule_time == current_time:
                         logger.info(f"[调度器] 执行定时任务: {task['name']}")
                         run_id = now.strftime("%Y%m%d%H%M%S")
-                        thread = threading.Thread(target=run_inspection, args=(
-                            run_id,
-                            task["project_name"],
-                            task["inspector"],
-                            task["report_format"],
-                            task["resource_group_id"],
-                            task["check_cpu"],
-                            task["check_mem"],
-                            task["check_disk"],
-                            task["enable_proxy"],
-                            task["proxy_rules"],
-                            task["id"]
-                        ))
-                        thread.daemon = True
-                        thread.start()
+                        # 使用协程执行巡检任务，避免线程数限制
+                        try:
+                            eventlet.spawn(run_inspection,
+                                run_id,
+                                task["project_name"],
+                                task["inspector"],
+                                task["report_format"],
+                                task["resource_group_id"],
+                                task["check_cpu"],
+                                task["check_mem"],
+                                task["check_disk"],
+                                task["enable_proxy"],
+                                task["proxy_rules"],
+                                task["id"]
+                            )
+                            logger.info(f"[调度器] 任务 {task['name']} 已启动（协程模式）")
+                        except RuntimeError as e:
+                            logger.warning(f"协程启动失败，尝试线程模式: {e}")
+                            try:
+                                thread = threading.Thread(target=run_inspection, args=(
+                                    run_id,
+                                    task["project_name"],
+                                    task["inspector"],
+                                    task["report_format"],
+                                    task["resource_group_id"],
+                                    task["check_cpu"],
+                                    task["check_mem"],
+                                    task["check_disk"],
+                                    task["enable_proxy"],
+                                    task["proxy_rules"],
+                                    task["id"]
+                                ))
+                                thread.daemon = True
+                                thread.start()
+                            except RuntimeError as e2:
+                                logger.error(f"线程启动也失败: {e2}")
                         
         except Exception as e:
             logger.error(f"定时任务调度器错误: {e}")
@@ -680,11 +972,19 @@ def run_scheduled_tasks():
         time.sleep(60)
 
 def start_scheduler():
-    """启动定时任务调度器"""
-    scheduler_thread = threading.Thread(target=run_scheduled_tasks)
-    scheduler_thread.daemon = True
-    scheduler_thread.start()
-    logger.info("定时任务调度器已启动")
+    """启动定时任务调度器（使用协程避免线程数限制）"""
+    try:
+        eventlet.spawn(run_scheduled_tasks)
+        logger.info("定时任务调度器已启动（协程模式）")
+    except RuntimeError as e:
+        logger.warning(f"协程启动失败，尝试线程模式: {e}")
+        try:
+            scheduler_thread = threading.Thread(target=run_scheduled_tasks)
+            scheduler_thread.daemon = True
+            scheduler_thread.start()
+            logger.info("定时任务调度器已启动（线程模式）")
+        except RuntimeError as e2:
+            logger.error(f"线程启动也失败: {e2}")
 
 def main():
     logger.info("Starting Ops Inspection System...")

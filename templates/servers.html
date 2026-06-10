@@ -167,3 +167,207 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+function addGroup() {
+  const groupName = document.getElementById('groupName').value.trim();
+  if (!groupName) {
+    alert('请输入分组名称');
+    return;
+  }
+  
+  fetch('/api/groups', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrf_token')
+    },
+    body: JSON.stringify({ name: groupName }),
+    credentials: 'include'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('分组添加成功');
+      document.getElementById('groupName').value = '';
+      location.reload();
+    } else {
+      alert('添加失败: ' + (data.message || '未知错误'));
+    }
+  })
+  .catch(error => {
+    console.error('添加分组失败:', error);
+    alert('添加分组失败，请重试');
+  });
+}
+
+function deleteGroup(groupId) {
+  if (!confirm('确定要删除这个分组吗？')) {
+    return;
+  }
+  
+  fetch('/api/groups/' + groupId, {
+    method: 'DELETE',
+    headers: {
+      'X-CSRFToken': getCookie('csrf_token')
+    },
+    credentials: 'include'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('删除成功');
+      location.reload();
+    } else {
+      alert('删除失败: ' + (data.message || '未知错误'));
+    }
+  })
+  .catch(error => {
+    console.error('删除分组失败:', error);
+    alert('删除分组失败，请重试');
+  });
+}
+
+function addServer() {
+  const ip = document.getElementById('ip').value.trim();
+  const port = document.getElementById('port').value.trim();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const notes = document.getElementById('notes').value.trim();
+  
+  if (!ip) {
+    alert('请输入IP地址');
+    return;
+  }
+  if (!port) {
+    alert('请输入端口');
+    return;
+  }
+  if (!username) {
+    alert('请输入用户名');
+    return;
+  }
+  if (!password) {
+    alert('请输入密码');
+    return;
+  }
+  
+  const selectedGroups = [];
+  document.querySelectorAll('input[name="serverGroups"]:checked').forEach(checkbox => {
+    selectedGroups.push(parseInt(checkbox.value));
+  });
+  
+  fetch('/api/servers', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrf_token')
+    },
+    body: JSON.stringify({
+      ip: ip,
+      port: parseInt(port),
+      username: username,
+      password: password,
+      notes: notes,
+      group_ids: selectedGroups
+    }),
+    credentials: 'include'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('服务器添加成功');
+      document.getElementById('ip').value = '';
+      document.getElementById('port').value = '22';
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('notes').value = '';
+      document.querySelectorAll('input[name="serverGroups"]').forEach(cb => cb.checked = false);
+      location.reload();
+    } else {
+      alert('添加失败: ' + (data.message || '未知错误'));
+    }
+  })
+  .catch(error => {
+    console.error('添加服务器失败:', error);
+    alert('添加服务器失败，请重试');
+  });
+}
+
+function deleteServer(serverId) {
+  if (!confirm('确定要删除这个服务器吗？')) {
+    return;
+  }
+  
+  fetch('/api/servers/' + serverId, {
+    method: 'DELETE',
+    headers: {
+      'X-CSRFToken': getCookie('csrf_token')
+    },
+    credentials: 'include'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('删除成功');
+      location.reload();
+    } else {
+      alert('删除失败: ' + (data.message || '未知错误'));
+    }
+  })
+  .catch(error => {
+    console.error('删除服务器失败:', error);
+    alert('删除服务器失败，请重试');
+  });
+}
+
+function loadServers() {
+  const groupId = document.getElementById('filterGroup').value;
+  let url = '/api/servers';
+  if (groupId) {
+    url += '?group_id=' + groupId;
+  }
+  
+  fetch(url, { credentials: 'include' })
+  .then(response => response.json())
+  .then(data => {
+    const tbody = document.getElementById('serverTbody');
+    tbody.innerHTML = '';
+    
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-row"><span class="empty-icon">📭</span><span>暂无服务器</span></td></tr>';
+      return;
+    }
+    
+    data.forEach(server => {
+      const groupTags = server.group_names && server.group_names !== '无' 
+        ? server.group_names.split(', ').map(name => `<span class="group-tag">${name}</span>`).join('')
+        : '<span class="empty-text">-</span>';
+      
+      tbody.innerHTML += `
+        <tr>
+          <td class="ip-cell">${server.ip}</td>
+          <td>${server.port}</td>
+          <td>${server.username}</td>
+          <td class="groups-cell">${groupTags}</td>
+          <td class="notes-cell">${server.notes || '-'}</td>
+          <td>
+            <button class="btn btn-sm btn-danger" onclick="deleteServer(${server.id})">删除</button>
+          </td>
+        </tr>
+      `;
+    });
+  })
+  .catch(error => {
+    console.error('加载服务器列表失败:', error);
+  });
+}
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+</script>
+{% endblock %}
