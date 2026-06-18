@@ -3,15 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>运维巡检系统</title>
+  <title>灵兔洞察系统</title>
   <link href="/static/lib/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <img src="/static/images/logo.png?v=1" alt="运维巡检" class="sidebar-logo">
-      <a href="/profile" class="sidebar-welcome">欢迎您！{{ current_user.display_name or current_user.username }}</a>
+      <img src="/static/images/logo.png?v=1" alt="灵兔洞察" class="sidebar-logo">
     </div>
     
     <div class="sidebar-menu">
@@ -56,6 +55,9 @@
     </div>
     
     <div class="sidebar-footer">
+      <div class="sidebar-actions">
+        <a href="/profile" class="sidebar-action-btn sidebar-action-exit">退出</a>
+      </div>
       <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
         <span class="toggle-icon">◀</span>
       </button>
